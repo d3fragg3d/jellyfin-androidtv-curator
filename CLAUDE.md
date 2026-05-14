@@ -267,6 +267,7 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` collection type now routes to `movieGenrePicker` instead of grid/smart screen |
+| `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemRowAdapter.java` | Low | `loadMoreItemsIfNeeded()` skips pagination during scroll |
 | `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies` string |
 | `CLAUDE.md` | None | New file |
 | `FORK.md` | None | New file |

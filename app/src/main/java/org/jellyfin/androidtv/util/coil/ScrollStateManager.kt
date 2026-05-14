@@ -25,4 +25,7 @@ object ScrollStateManager {
     suspend fun awaitIdle() {
         if (isScrolling.value) isScrolling.first { !it }
     }
+
+    @JvmStatic
+    fun isCurrentlyScrolling(): Boolean = isScrolling.value
 }

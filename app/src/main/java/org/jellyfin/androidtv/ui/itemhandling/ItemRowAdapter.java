@@ -13,6 +13,7 @@ import androidx.leanback.widget.PresenterSelector;
 import androidx.leanback.widget.Row;
 
 import org.jellyfin.androidtv.R;
+import org.jellyfin.androidtv.util.coil.ScrollStateManager;
 import org.jellyfin.androidtv.auth.repository.UserRepository;
 import org.jellyfin.androidtv.constant.ChangeTriggerType;
 import org.jellyfin.androidtv.constant.QueryType;
@@ -472,6 +473,7 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
     }
 
     public void loadMoreItemsIfNeeded(int pos) {
+        if (ScrollStateManager.isCurrentlyScrolling()) return;
         if (fullyLoaded) {
             //context.getLogger().Debug("Row is fully loaded");
             return;

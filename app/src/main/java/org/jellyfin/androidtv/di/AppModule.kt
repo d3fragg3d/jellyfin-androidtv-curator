@@ -13,6 +13,7 @@ import coil3.serviceLoaderEnabled
 import coil3.svg.SvgDecoder
 import coil3.util.Logger
 import org.jellyfin.androidtv.BuildConfig
+import org.jellyfin.androidtv.util.coil.ScrollAwareInterceptor
 import org.jellyfin.androidtv.auth.repository.ServerRepository
 import org.jellyfin.androidtv.auth.repository.UserRepository
 import org.jellyfin.androidtv.auth.repository.UserRepositoryImpl
@@ -117,6 +118,7 @@ val appModule = module {
 			logger(CoilTimberLogger(if (BuildConfig.DEBUG) Logger.Level.Warn else Logger.Level.Error))
 
 			components {
+				add(ScrollAwareInterceptor())
 				add(get<NetworkFetcher.Factory>())
 
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) add(AnimatedImageDecoder.Factory())

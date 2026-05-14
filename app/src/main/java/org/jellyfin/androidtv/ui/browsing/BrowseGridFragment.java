@@ -17,6 +17,7 @@ import android.widget.PopupWindow;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.leanback.widget.BaseGridView;
@@ -29,6 +30,7 @@ import androidx.leanback.widget.VerticalGridPresenter;
 import androidx.lifecycle.Lifecycle;
 
 import org.jellyfin.androidtv.R;
+import org.jellyfin.androidtv.util.coil.ScrollStateManager;
 import org.jellyfin.androidtv.constant.ChangeTriggerType;
 import org.jellyfin.androidtv.constant.CustomMessage;
 import org.jellyfin.androidtv.constant.Extras;
@@ -132,6 +134,20 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     private boolean mDirty = true; // CardHeight, RowDef or GridSize changed
 
+    private boolean mGridScrolling = false;
+    private final RecyclerView.OnScrollListener mScrollStateListener = new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+            if (newState != RecyclerView.SCROLL_STATE_IDLE && !mGridScrolling) {
+                mGridScrolling = true;
+                ScrollStateManager.INSTANCE.onScrollStart();
+            } else if (newState == RecyclerView.SCROLL_STATE_IDLE && mGridScrolling) {
+                mGridScrolling = false;
+                ScrollStateManager.INSTANCE.onScrollStop();
+            }
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -209,6 +225,13 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     @Override
     public void onDestroyView() {
+        if (mGridView != null) {
+            mGridView.removeOnScrollListener(mScrollStateListener);
+            if (mGridScrolling) {
+                mGridScrolling = false;
+                ScrollStateManager.INSTANCE.onScrollStop();
+            }
+        }
         super.onDestroyView();
 
         binding = null;
@@ -216,6 +239,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     }
 
     private void createGrid() {
+        if (mGridView != null) mGridView.removeOnScrollListener(mScrollStateListener);
+
         mGridViewHolder = mGridPresenter.onCreateViewHolder(binding.rowsFragment);
         if (mGridViewHolder instanceof HorizontalGridPresenter.ViewHolder) {
             mGridView = ((HorizontalGridPresenter.ViewHolder) mGridViewHolder).getGridView();
@@ -231,6 +256,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         mGridView.setHorizontalSpacing(mGridItemSpacingHorizontal);
         mGridView.setVerticalSpacing(mGridItemSpacingVertical);
         mGridView.setFocusable(true);
+        mGridView.addOnScrollListener(mScrollStateListener);
         binding.rowsFragment.removeAllViews();
         binding.rowsFragment.addView(mGridViewHolder.view);
 

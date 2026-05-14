@@ -47,6 +47,8 @@ import org.jellyfin.androidtv.ui.presentation.CardPresenter
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter
 import org.jellyfin.androidtv.util.KeyProcessor
+import org.jellyfin.androidtv.util.coil.ScrollStateManager
+import androidx.recyclerview.widget.RecyclerView
 import org.jellyfin.playback.core.PlaybackManager
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
@@ -74,6 +76,20 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private val keyProcessor by inject<KeyProcessor>()
 
 	private val helper by lazy { HomeFragmentHelper(requireContext(), userRepository) }
+
+	// Scroll-aware image loading
+	private var rowsScrolling = false
+	private val rowsScrollListener = object : RecyclerView.OnScrollListener() {
+		override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+			if (newState != RecyclerView.SCROLL_STATE_IDLE && !rowsScrolling) {
+				rowsScrolling = true
+				ScrollStateManager.onScrollStart()
+			} else if (newState == RecyclerView.SCROLL_STATE_IDLE && rowsScrolling) {
+				rowsScrolling = false
+				ScrollStateManager.onScrollStop()
+			}
+		}
+	}
 
 	// Data
 	private var currentItem: BaseRowItem? = null
@@ -191,6 +207,20 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 		// Subscribe to Audio messages
 		mediaManager.addAudioEventListener(this)
+	}
+
+	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+		super.onViewCreated(view, savedInstanceState)
+		verticalGridView.addOnScrollListener(rowsScrollListener)
+	}
+
+	override fun onDestroyView() {
+		verticalGridView.removeOnScrollListener(rowsScrollListener)
+		if (rowsScrolling) {
+			rowsScrolling = false
+			ScrollStateManager.onScrollStop()
+		}
+		super.onDestroyView()
 	}
 
 	override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {

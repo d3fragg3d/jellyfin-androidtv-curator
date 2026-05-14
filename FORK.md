@@ -71,8 +71,13 @@ As our UI changes grow (nested folder browser, custom detail screens, etc.), we'
 
 | File | Risk | Notes |
 |------|------|-------|
-| `HomeRowsFragment.kt` | Low | Our addition is at the bottom of the coroutine block; JF rarely touches this |
-| *(future browse files)* | Medium | Will grow as we build nested folder browsing |
+| `ui/home/HomeRowsFragment.kt` | Low | Addition at the bottom of coroutine block; JF rarely touches this |
+| `ui/itemhandling/ItemLauncher.java` | Low | MOVIES case replaced with genre picker; split from TV shows case |
+| `ui/browsing/BrowseGridFragment.java` | Low | One extra line in `setupQueries()` to read genre arg |
+| `ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
+| `ui/navigation/Destinations.kt` | Low | Two new destination functions added |
+| `constant/Extras.kt` | Low | One new constant added |
+| `res/values/strings.xml` | Low | One new string added |
 
 ---
 

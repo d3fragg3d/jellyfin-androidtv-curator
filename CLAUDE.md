@@ -261,6 +261,13 @@ These are the files that differ from upstream. New files we add are never a conf
 |------|------|-----------------|
 | `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeRowsFragment.kt` | Low | Added curator BoxSet fetch + one row append at the bottom of the main coroutine block |
 | `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeFragmentCuratorRow.kt` | None | New file — no upstream equivalent |
+| `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorMovieGenrePickerFragment.kt` | None | New file — genre picker grid shown when Movies library is opened |
+| `app/src/main/java/org/jellyfin/androidtv/constant/Extras.kt` | Low | Added `GenreName` constant |
+| `app/src/main/java/org/jellyfin/androidtv/ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()` and `libraryBrowserByGenre()` destinations |
+| `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
+| `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
+| `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` collection type now routes to `movieGenrePicker` instead of grid/smart screen |
+| `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies` string |
 | `CLAUDE.md` | None | New file |
 | `FORK.md` | None | New file |
 

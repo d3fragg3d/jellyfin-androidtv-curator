@@ -289,7 +289,8 @@ object BrowsingUtils {
 	)
 
 	@JvmStatic
-	fun createBrowseGridItemsRequest(parent: BaseItemDto): GetItemsRequest {
+	@JvmOverloads
+	fun createBrowseGridItemsRequest(parent: BaseItemDto, genre: String? = null): GetItemsRequest {
 		val baseRequest = GetItemsRequest(
 			fields = ItemRepository.itemFields,
 			parentId = parent.id,
@@ -300,11 +301,13 @@ object BrowsingUtils {
 				CollectionType.MOVIES -> baseRequest.copy(
 					includeItemTypes = setOf(BaseItemKind.MOVIE),
 					recursive = true,
+					genres = genre?.let { setOf(it) },
 				)
 
 				CollectionType.TVSHOWS -> baseRequest.copy(
 					includeItemTypes = setOf(BaseItemKind.SERIES),
 					recursive = true,
+					genres = genre?.let { setOf(it) },
 				)
 
 				CollectionType.MUSIC -> baseRequest.copy(

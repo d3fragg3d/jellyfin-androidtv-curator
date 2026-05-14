@@ -558,7 +558,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             }
         }
 
-        setRowDef(new BrowseRowDef("", BrowsingUtils.createBrowseGridItemsRequest(mFolder), CHUNK_SIZE_MINIMUM, false, true));
+        String genreName = getArguments().getString(Extras.GenreName, null);
+        setRowDef(new BrowseRowDef("", BrowsingUtils.createBrowseGridItemsRequest(mFolder, genreName), CHUNK_SIZE_MINIMUM, false, true));
     }
 
     @Override

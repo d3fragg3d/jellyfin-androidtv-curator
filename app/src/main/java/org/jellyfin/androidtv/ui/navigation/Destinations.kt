@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.navigation
 import kotlinx.serialization.json.Json
 import org.jellyfin.androidtv.constant.Extras
 import org.jellyfin.androidtv.ui.browsing.BrowseGridFragment
+import org.jellyfin.androidtv.ui.browsing.CuratorMovieGenrePickerFragment
 import org.jellyfin.androidtv.ui.browsing.BrowseRecordingsFragment
 import org.jellyfin.androidtv.ui.browsing.BrowseScheduleFragment
 import org.jellyfin.androidtv.ui.browsing.BrowseViewFragment
@@ -64,6 +65,19 @@ object Destinations {
 	fun folderBrowser(item: BaseItemDto) = fragmentDestination<GenericFolderFragment>(
 		Extras.Folder to Json.Default.encodeToString(item),
 	)
+
+	// TODO only pass item id instead of complete JSON to browsing destinations
+	fun movieGenrePicker(item: BaseItemDto) =
+		fragmentDestination<CuratorMovieGenrePickerFragment>(
+			Extras.Folder to Json.encodeToString(item),
+		)
+
+	// TODO only pass item id instead of complete JSON to browsing destinations
+	fun libraryBrowserByGenre(item: BaseItemDto, genre: String) =
+		fragmentDestination<BrowseGridFragment>(
+			Extras.Folder to Json.encodeToString(item),
+			Extras.GenreName to genre,
+		)
 
 	// TODO only pass item id instead of complete JSON to browsing destinations
 	fun libraryByGenres(item: BaseItemDto, includeType: String) =

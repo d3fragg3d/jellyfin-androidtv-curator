@@ -52,6 +52,7 @@ public class ItemLauncher {
 
         switch (collectionType) {
             case MOVIES:
+                return Destinations.INSTANCE.movieGenrePicker(baseItem);
             case TVSHOWS:
                 LibraryPreferences displayPreferences = preferencesRepository.getValue().getLibraryPreferences(baseItem.getDisplayPreferencesId());
                 boolean enableSmartScreen = displayPreferences.get(LibraryPreferences.Companion.getEnableSmartScreen());

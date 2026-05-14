@@ -49,7 +49,9 @@ import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter
 import org.jellyfin.androidtv.util.KeyProcessor
 import org.jellyfin.playback.core.PlaybackManager
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.sockets.subscribe
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import org.koin.android.ext.android.inject
@@ -102,6 +104,16 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			// Check for coroutine cancellation
 			if (!isActive) return@launch
 
+			// Fetch curator collections (added after standard sections)
+			val curatorCollections = runCatching {
+				api.itemsApi.getItems(
+					userId = currentUser.id,
+					isFavorite = true,
+					includeItemTypes = setOf(BaseItemKind.BOX_SET),
+					recursive = true,
+				).content.items.orEmpty()
+			}.getOrDefault(emptyList())
+
 			// Actually add the sections
 			for (section in homesections) when (section) {
 				HomeSectionType.LATEST_MEDIA -> rows.add(helper.loadRecentlyAdded(userViewsRepository.views.first()))
@@ -119,6 +131,9 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 				HomeSectionType.NONE -> Unit
 			}
+
+			// Add curator collection rows below all standard sections
+			if (curatorCollections.isNotEmpty()) rows.add(HomeFragmentCuratorRow(curatorCollections, currentUser.id))
 
 			// Add sections to layout
 			withContext(Dispatchers.Main) {

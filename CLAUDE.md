@@ -237,6 +237,37 @@ App is noticeably slower than Emby on startup. Likely cause: 5+ concurrent colle
 
 Emby has OpenSubtitles integration built in; Jellyfin Android TV does not. Significant work — deferred indefinitely.
 
+## Upstream sync process
+
+Two remotes are configured:
+- `origin` → our fork (`https://github.com/d3fragg3d/jellyfin-androidtv-curator.git`)
+- `upstream` → official Jellyfin repo (`https://github.com/jellyfin/jellyfin-androidtv.git`)
+
+To sync upstream changes into master:
+```bash
+git fetch upstream
+git log --oneline master..upstream/master   # preview what's coming
+git merge upstream/master
+git push origin master
+```
+
+Conflicts will only occur in files listed in the "Files we own" table below. Resolve by keeping both sides — upstream changes are almost always in different parts of the same file from ours.
+
+## Files we own — conflict risk map
+
+These are the files that differ from upstream. New files we add are never a conflict risk; only modified upstream files are.
+
+| File | Risk | What we changed |
+|------|------|-----------------|
+| `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeRowsFragment.kt` | Low | Added curator BoxSet fetch + one row append at the bottom of the main coroutine block |
+| `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeFragmentCuratorRow.kt` | None | New file — no upstream equivalent |
+| `CLAUDE.md` | None | New file |
+| `FORK.md` | None | New file |
+
+**Principle for new features:** prefer adding new files over modifying existing upstream files. When a modification to an existing file is unavoidable, keep it in one clearly-delimited block (ideally at the end of a function) so it's obvious during conflict resolution.
+
+As we add the nested browser UI, settings screens, and other changes, add every modified upstream file to this table immediately so the conflict surface stays documented.
+
 ## Known constraints
 
 - The Jellyfin Android TV SDK (`org.jellyfin.sdk`) handles auth token injection automatically — all API calls go through `ApiClient` which is injected via Koin. No manual auth header management needed.

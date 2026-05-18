@@ -130,10 +130,6 @@ class StartupActivity : FragmentActivity() {
 		}.launchIn(lifecycleScope)
 
 	private suspend fun openNextActivity() {
-		// Hold splash for at least 3s so home rows have time to load behind it
-		val elapsed = System.currentTimeMillis() - splashShownAt
-		val remaining = 3_000L - elapsed
-		if (remaining > 0) kotlinx.coroutines.delay(remaining)
 		val itemId = when {
 			intent.action == Intent.ACTION_VIEW && intent.data != null -> intent.data.toString()
 			else -> intent.getStringExtra(EXTRA_ITEM_ID)
@@ -172,7 +168,13 @@ class StartupActivity : FragmentActivity() {
 		// Clear navigation history
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_TASK_ON_HOME)
 		Timber.i("Opening next activity $intent")
+		// Start MainActivity immediately so home rows load behind the splash
 		startActivity(intent)
+
+		// Hold the splash visible for at least 3s total
+		val elapsed = System.currentTimeMillis() - splashShownAt
+		val remaining = 3_000L - elapsed
+		if (remaining > 0) kotlinx.coroutines.delay(remaining)
 		finishAfterTransition()
 	}
 

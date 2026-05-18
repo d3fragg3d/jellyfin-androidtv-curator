@@ -93,6 +93,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 							parentId = folder.id,
 							includeItemTypes = setOf(includeType),
 							genres = setOf(name),
+							recursive = true,
 							limit = 1,
 							sortBy = setOf(ItemSortBy.RANDOM),
 							enableImages = true,

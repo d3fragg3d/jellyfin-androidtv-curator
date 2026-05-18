@@ -175,7 +175,7 @@ class StartupActivity : FragmentActivity() {
 		val elapsed = System.currentTimeMillis() - splashShownAt
 		val remaining = 3_000L - elapsed
 		if (remaining > 0) kotlinx.coroutines.delay(remaining)
-		finishAfterTransition()
+		finish()
 	}
 
 	// Fragment switching

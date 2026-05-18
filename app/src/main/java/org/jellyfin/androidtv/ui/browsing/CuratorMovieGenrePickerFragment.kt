@@ -94,15 +94,16 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 							includeItemTypes = setOf(includeType),
 							genres = setOf(name),
 							recursive = true,
-							limit = 1,
+							limit = 10,
 							sortBy = setOf(ItemSortBy.RANDOM),
 							enableImages = true,
 							imageTypeLimit = 1,
 							enableImageTypes = setOf(ImageType.BACKDROP),
 						)
-						result.items?.firstOrNull()
-							?.itemBackdropImages?.firstOrNull()
-							?.getUrl(api, maxWidth = 520, maxHeight = 292)
+						result.items?.firstNotNullOfOrNull { item ->
+							item.itemBackdropImages.firstOrNull()
+								?.getUrl(api, maxWidth = 520, maxHeight = 292)
+						}
 					}.getOrNull()
 				}
 				adapter.add(GenreCardItem(name, imageUrl))

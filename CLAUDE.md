@@ -292,6 +292,10 @@ These are the files that differ from upstream. New files we add are never a conf
 
 As we add the nested browser UI, settings screens, and other changes, add every modified upstream file to this table immediately so the conflict surface stays documented.
 
+## Git conventions
+
+- Do **not** add `Co-Authored-By: Claude` lines to commit messages. Write commits as if the user authored them directly.
+
 ## Known constraints
 
 - The Jellyfin Android TV SDK (`org.jellyfin.sdk`) handles auth token injection automatically — all API calls go through `ApiClient` which is injected via Koin. No manual auth header management needed.

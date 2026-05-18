@@ -7,8 +7,6 @@ import androidx.annotation.Nullable;
 import org.jellyfin.androidtv.constant.LiveTvOption;
 import org.jellyfin.androidtv.constant.QueryType;
 import org.jellyfin.androidtv.data.model.ChapterItemInfo;
-import org.jellyfin.androidtv.preference.LibraryPreferences;
-import org.jellyfin.androidtv.preference.PreferencesRepository;
 import org.jellyfin.androidtv.ui.navigation.Destination;
 import org.jellyfin.androidtv.ui.navigation.Destinations;
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository;
@@ -33,7 +31,6 @@ import timber.log.Timber;
 
 public class ItemLauncher {
     private final Lazy<NavigationRepository> navigationRepository = KoinJavaComponent.<NavigationRepository>inject(NavigationRepository.class);
-    private final Lazy<PreferencesRepository> preferencesRepository = KoinJavaComponent.<PreferencesRepository>inject(org.jellyfin.androidtv.preference.PreferencesRepository .class);
     private final Lazy<MediaManager> mediaManager = KoinJavaComponent.<MediaManager>inject(MediaManager.class);
     private final Lazy<PlaybackLauncher> playbackLauncher = KoinJavaComponent.<PlaybackLauncher>inject(PlaybackLauncher.class);
     private final Lazy<PlaybackHelper> playbackHelper = KoinJavaComponent.<PlaybackHelper>inject(PlaybackHelper.class);
@@ -54,11 +51,7 @@ public class ItemLauncher {
             case MOVIES:
                 return Destinations.INSTANCE.movieGenrePicker(baseItem);
             case TVSHOWS:
-                LibraryPreferences displayPreferences = preferencesRepository.getValue().getLibraryPreferences(baseItem.getDisplayPreferencesId());
-                boolean enableSmartScreen = displayPreferences.get(LibraryPreferences.Companion.getEnableSmartScreen());
-
-                if (!enableSmartScreen) return Destinations.INSTANCE.libraryBrowser(baseItem);
-                else return Destinations.INSTANCE.librarySmartScreen(baseItem);
+                return Destinations.INSTANCE.tvShowGenrePicker(baseItem);
             case MUSIC:
             case LIVETV:
                 return Destinations.INSTANCE.librarySmartScreen(baseItem);

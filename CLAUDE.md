@@ -272,11 +272,17 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeFragmentCuratorRow.kt` | None | New file — no upstream equivalent |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorMovieGenrePickerFragment.kt` | None | New file — genre picker grid shown when Movies library is opened |
 | `app/src/main/java/org/jellyfin/androidtv/constant/Extras.kt` | Low | Added `GenreName` constant |
-| `app/src/main/java/org/jellyfin/androidtv/ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()` and `libraryBrowserByGenre()` destinations |
+| `app/src/main/java/org/jellyfin/androidtv/ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()`, `tvShowGenrePicker()`, and `libraryBrowserByGenre()` destinations |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
-| `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` collection type now routes to `movieGenrePicker` instead of grid/smart screen |
+| `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` → `movieGenrePicker`, `TVSHOWS` → `tvShowGenrePicker`; removed LibraryPreferences dependency |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemRowAdapter.java` | Low | `loadMoreItemsIfNeeded()` skips pagination during scroll |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/StartupActivity.kt` | Low | Added 3s minimum splash duration before navigating to MainActivity |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/SplashFragment.kt` | Low | Background changed to Color.Black (was not_quite_black); removed colorResource dependency |
+| `app/src/main/java/org/jellyfin/androidtv/ui/shared/toolbar/Toolbar.kt` | Low | Logo() uses curator_symbol.png (symbol only) at 64dp height instead of full logo |
+| `app/src/main/java/org/jellyfin/androidtv/preference/UserPreferences.kt` | Low | `backdropEnabled` default changed to false |
+| `app/src/main/java/org/jellyfin/androidtv/data/repository/UserViewsRepository.kt` | Low | Added `CollectionType.BOXSETS` to unsupportedCollectionTypes — hides Collections tile from home |
+| `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenreCardPresenter.kt` | None | New file — 260×146dp image card presenter for genre picker |
 | `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`; replaced user-visible "Jellyfin" brand strings with "Curator" |
 | `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
 | `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |
@@ -284,6 +290,10 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/res/drawable/app_logo.png` | None | Replaced Jellyfin vector with Curator PNG (splash screen logo) |
 | `app/src/main/res/mipmap-*/app_icon.png` | None | Replaced with Curator icon (logo only, no text) |
 | `app/src/main/res/mipmap-*/app_banner.png` | None | Replaced with Curator banner (full logo + text, 16:9) |
+| `app/src/main/res/mipmap-anydpi-v26/app_icon.xml` | None | Adaptive icon XML — background=black, foreground=curator_symbol_sq.png |
+| `app/src/main/res/drawable/app_icon_foreground.xml` | Low | Updated to reference curator_symbol_sq.png (avoids circular reference) |
+| `app/src/main/res/drawable/curator_symbol.png` | None | Transparent-bg symbol PNG (no text) for Toolbar logo |
+| `app/src/main/res/drawable/curator_symbol_sq.png` | None | Square transparent-bg symbol PNG for adaptive icon foreground |
 | `app/src/main/res/drawable/app_icon_background.xml` | Low | Background colour set to pure black |
 | `CLAUDE.md` | None | New file |
 | `FORK.md` | None | New file |

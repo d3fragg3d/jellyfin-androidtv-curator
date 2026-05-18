@@ -130,6 +130,10 @@ class StartupActivity : FragmentActivity() {
 		}.launchIn(lifecycleScope)
 
 	private suspend fun openNextActivity() {
+		// Hold splash for at least 3s so home rows have time to load behind it
+		val elapsed = System.currentTimeMillis() - splashShownAt
+		val remaining = 3_000L - elapsed
+		if (remaining > 0) kotlinx.coroutines.delay(remaining)
 		val itemId = when {
 			intent.action == Intent.ACTION_VIEW && intent.data != null -> intent.data.toString()
 			else -> intent.getStringExtra(EXTRA_ITEM_ID)
@@ -173,10 +177,13 @@ class StartupActivity : FragmentActivity() {
 	}
 
 	// Fragment switching
+	private var splashShownAt = 0L
+
 	private fun showSplash() {
 		// Prevent progress bar flashing
 		if (supportFragmentManager.findFragmentById(R.id.content_view) is SplashFragment) return
 
+		splashShownAt = System.currentTimeMillis()
 		supportFragmentManager.commit {
 			replace<SplashFragment>(R.id.content_view)
 		}

@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,7 +26,7 @@ import org.jellyfin.androidtv.ui.base.JellyfinTheme
 @Composable
 fun SplashScreen() {
 	Box(
-		modifier = Modifier.background(colorResource(id = R.color.not_quite_black)),
+		modifier = Modifier.background(Color.Black),
 	) {
 		Column(
 			horizontalAlignment = Alignment.CenterHorizontally,

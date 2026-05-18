@@ -70,6 +70,13 @@ object Destinations {
 	fun movieGenrePicker(item: BaseItemDto) =
 		fragmentDestination<CuratorMovieGenrePickerFragment>(
 			Extras.Folder to Json.encodeToString(item),
+			Extras.IncludeType to "Movie",
+		)
+
+	fun tvShowGenrePicker(item: BaseItemDto) =
+		fragmentDestination<CuratorMovieGenrePickerFragment>(
+			Extras.Folder to Json.encodeToString(item),
+			Extras.IncludeType to "Series",
 		)
 
 	// TODO only pass item id instead of complete JSON to browsing destinations

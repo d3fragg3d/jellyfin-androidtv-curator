@@ -56,7 +56,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 				else -> return@OnItemViewClickedListener
 			}
 			val destination = if (button.id == ALL_MOVIES_ID) {
-				Destinations.libraryBrowser(folder, null)
+				Destinations.libraryBrowser(folder)
 			} else {
 				Destinations.libraryBrowserByGenre(folder, button.text)
 			}

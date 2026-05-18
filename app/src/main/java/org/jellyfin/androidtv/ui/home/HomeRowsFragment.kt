@@ -87,6 +87,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			} else if (newState == RecyclerView.SCROLL_STATE_IDLE && rowsScrolling) {
 				rowsScrolling = false
 				ScrollStateManager.onScrollStop()
+				// Update background now that scrolling has stopped
+				val item = currentItem
+				if (item != null) backgroundService.setBackground(item.baseItem)
+				else backgroundService.clearBackgrounds()
 			}
 		}
 	}

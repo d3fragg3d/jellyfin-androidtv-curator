@@ -85,6 +85,10 @@
         <item name="tile_port_time_bg">@color/spanish_blue</item>
     </style>
 
+    <style name="Theme.Jellyfin.Splash" parent="Theme.Jellyfin">
+        <item name="android:windowBackground">@color/black</item>
+    </style>
+
     <style name="Theme.Jellyfin.Preferences" parent="Theme.Jellyfin">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:backgroundDimEnabled">true</item>

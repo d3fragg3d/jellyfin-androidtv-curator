@@ -13,7 +13,8 @@ A fork of the official Jellyfin Android TV app, modified to display Netflix-styl
 | Jellyfin server | `http://10.0.20.2:8096` (TrueNAS Scale) |
 | Curator plugin dir | `/mnt/Media/Jellyfin/plugins/Curator/` on TrueNAS |
 | Android TV (Sony) | `10.0.0.62:5555` (ADB over WiFi) |
-| Branch | `master` |
+| Branch | `master` (tracks `upstream/release-0.19.z` — **NOT** upstream/master) |
+| App package ID | `tv.curator.app` |
 | Signing | Debug keystore for sideloading |
 
 ## Build & Deploy
@@ -243,13 +244,21 @@ Two remotes are configured:
 - `origin` → our fork (`https://github.com/d3fragg3d/jellyfin-androidtv-curator.git`)
 - `upstream` → official Jellyfin repo (`https://github.com/jellyfin/jellyfin-androidtv.git`)
 
-To sync upstream changes into master:
+**IMPORTANT: We track `upstream/release-0.19.z`, NOT `upstream/master`.**
+
+The Play Store ships from the release branch. The master branch is pre-release development code that is significantly less performant and has not been through QA. We discovered this after comparing our fork (master-based) against the Play Store build — the release branch is dramatically smoother.
+
+To sync upstream changes (new patch releases on the 0.19.z branch):
 ```bash
 git fetch upstream
-git log --oneline master..upstream/master   # preview what's coming
-git merge upstream/master
+git log --oneline master..upstream/release-0.19.z   # preview what's coming
+git merge upstream/release-0.19.z
 git push origin master
 ```
+
+**Never merge from `upstream/master`** — it will reintroduce the performance regressions and potentially break our cherry-picked changes.
+
+When a new major release branch appears (e.g. `upstream/release-0.20.z`), evaluate it first by building and testing before rebasing onto it.
 
 Conflicts will only occur in files listed in the "Files we own" table below. Resolve by keeping both sides — upstream changes are almost always in different parts of the same file from ours.
 
@@ -268,7 +277,14 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` collection type now routes to `movieGenrePicker` instead of grid/smart screen |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemRowAdapter.java` | Low | `loadMoreItemsIfNeeded()` skips pagination during scroll |
-| `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies` string |
+| `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`; replaced user-visible "Jellyfin" brand strings with "Curator" |
+| `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
+| `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |
+| `app/src/main/AndroidManifest.xml` | Low | `StartupActivity` uses `Theme.Jellyfin.Splash` |
+| `app/src/main/res/drawable/app_logo.png` | None | Replaced Jellyfin vector with Curator PNG (splash screen logo) |
+| `app/src/main/res/mipmap-*/app_icon.png` | None | Replaced with Curator icon (logo only, no text) |
+| `app/src/main/res/mipmap-*/app_banner.png` | None | Replaced with Curator banner (full logo + text, 16:9) |
+| `app/src/main/res/drawable/app_icon_background.xml` | Low | Background colour set to pure black |
 | `CLAUDE.md` | None | New file |
 | `FORK.md` | None | New file |
 

@@ -171,9 +171,9 @@ class StartupActivity : FragmentActivity() {
 		// Start MainActivity immediately so home rows load behind the splash
 		startActivity(intent)
 
-		// Hold the splash visible for at least 3s total
+		// Hold the splash visible for at least 5s so home rows have time to load
 		val elapsed = System.currentTimeMillis() - splashShownAt
-		val remaining = 3_000L - elapsed
+		val remaining = 5_000L - elapsed
 		if (remaining > 0) kotlinx.coroutines.delay(remaining)
 		finish()
 	}
@@ -182,10 +182,10 @@ class StartupActivity : FragmentActivity() {
 	private var splashShownAt = 0L
 
 	private fun showSplash() {
-		// Prevent progress bar flashing
-		if (supportFragmentManager.findFragmentById(R.id.content_view) is SplashFragment) return
-
+		// Always update timing so the 5s minimum is measured from when the session was found
 		splashShownAt = System.currentTimeMillis()
+		// Prevent fragment flashing if splash is already showing
+		if (supportFragmentManager.findFragmentById(R.id.content_view) is SplashFragment) return
 		supportFragmentManager.commit {
 			replace<SplashFragment>(R.id.content_view)
 		}

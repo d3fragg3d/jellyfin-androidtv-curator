@@ -22,4 +22,22 @@
         android:id="@+id/screensaver"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/splash_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="400dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/app_logo"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/app_name" />
+
+    </LinearLayout>
 </RelativeLayout>

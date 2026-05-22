@@ -849,6 +849,16 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             mDetailsOverviewRow.addAction(mVersionsButton);
         }
 
+        if (mBaseItem.getType() == BaseItemKind.MOVIE || mBaseItem.getType() == BaseItemKind.EPISODE) {
+            TextUnderButton subtitleButton = TextUnderButton.create(requireContext(), R.drawable.ic_select_subtitle, buttonSize, 0, getString(R.string.lbl_download_subtitles), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SubtitleHelperKt.showSubtitlePicker(FullDetailsFragment.this, v, api.getValue(), mBaseItem);
+                }
+            });
+            mDetailsOverviewRow.addAction(subtitleButton);
+        }
+
         if (TrailerUtils.hasPlayableTrailers(requireContext(), mBaseItem)) {
             trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
                 @Override

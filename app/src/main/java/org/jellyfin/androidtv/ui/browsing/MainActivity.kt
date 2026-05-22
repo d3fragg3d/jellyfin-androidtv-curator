@@ -14,10 +14,16 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.activity.viewModels
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import org.jellyfin.androidtv.ui.home.HomeReadyViewModel
 import org.jellyfin.androidtv.auth.repository.SessionRepository
 import org.jellyfin.androidtv.auth.repository.UserRepository
 import org.jellyfin.androidtv.databinding.ActivityMainBinding
@@ -42,6 +48,8 @@ class MainActivity : FragmentActivity() {
 	private val workManager by inject<WorkManager>()
 
 	private lateinit var binding: ActivityMainBinding
+
+	private val homeReadyViewModel by viewModels<HomeReadyViewModel>()
 
 	private val backPressedCallback = object : OnBackPressedCallback(false) {
 		override fun handleOnBackPressed() {
@@ -77,6 +85,30 @@ class MainActivity : FragmentActivity() {
 		binding.background.setContent { AppBackground() }
 		binding.screensaver.setContent { InAppScreensaver() }
 		setContentView(binding.root)
+
+		val splashShownAt = intent.getLongExtra(StartupActivity.EXTRA_SPLASH_SHOWN_AT, 0L)
+		if (splashShownAt > 0L) {
+			binding.splashOverlay.visibility = View.VISIBLE
+			lifecycleScope.launch {
+				// Wait until HomeRowsFragment signals rows are added and Retrieve() called (10s fallback)
+				withTimeoutOrNull(10_000L) {
+					homeReadyViewModel.ready.filter { it }.first()
+				}
+				// After Retrieve() is called, give item network responses time to arrive
+				// Also enforce minimum 5s from when the session was found
+				val minLiftAt = maxOf(
+					splashShownAt + 5_000L,
+					System.currentTimeMillis() + 1_500L
+				)
+				val remaining = minLiftAt - System.currentTimeMillis()
+				if (remaining > 0) delay(remaining)
+				binding.splashOverlay.animate()
+					.alpha(0f)
+					.setDuration(400)
+					.withEndAction { binding.splashOverlay.visibility = View.GONE }
+					.start()
+			}
+		}
 	}
 
 	override fun onResume() {

@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.card;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -12,6 +13,7 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.leanback.widget.BaseCardView;
 
 import org.jellyfin.androidtv.R;
@@ -203,6 +205,21 @@ public class LegacyImageCardView extends BaseCardView {
             binding.extraBadge.setVisibility(View.VISIBLE);
         } else {
             binding.extraBadge.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    protected void onFocusChanged(boolean gainFocus, int direction, @Nullable android.graphics.Rect previouslyFocusedRect) {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (gainFocus) {
+            GradientDrawable border = new GradientDrawable();
+            border.setShape(GradientDrawable.RECTANGLE);
+            border.setCornerRadius(Utils.convertDpToPixel(getContext(), 4));
+            border.setStroke(Utils.convertDpToPixel(getContext(), 3),
+                    ContextCompat.getColor(getContext(), R.color.jellyfin_blue));
+            binding.mainImage.setForeground(border);
+        } else {
+            binding.mainImage.setForeground(null);
         }
     }
 

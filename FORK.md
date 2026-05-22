@@ -1,83 +1,113 @@
 # Jellyfin AndroidTV — Curator Fork
 
-This is a personal fork of [jellyfin/jellyfin-androidtv](https://github.com/jellyfin/jellyfin-androidtv), modified to work with the [Jellyfin Curator](https://github.com/d3fragg3d/jellyfin-curator) server plugin. It adds Netflix-style curated collection rows to the home screen and (eventually) a richer browsing experience.
+This is a personal fork of [jellyfin/jellyfin-androidtv](https://github.com/jellyfin/jellyfin-androidtv), modified to work with the [Jellyfin Curator](https://github.com/d3fragg3d/jellyfin-curator) server plugin. It adds Netflix-style curated collection rows to the home screen, a curated genre/collection browser, and subtitle downloading via OpenSubtitles.
+
+---
+
+## ⚠️ CRITICAL: Which upstream branch we track
+
+**We track `upstream/release-0.19.z` — NEVER `upstream/master`.**
+
+- `upstream/release-0.19.z` is the Play Store build. It is stable, performant, and QA'd.
+- `upstream/master` is pre-release development code. It is significantly less performant and has not been through QA. We discovered this the hard way — master-based builds are noticeably slower and rougher than the Play Store release.
+
+Every sync command below uses `release-0.19.z`. Do not change this without testing the new major branch thoroughly first.
 
 ---
 
 ## What's different from upstream
 
-| File | Status | What we changed |
-|------|--------|-----------------|
-| `app/.../ui/home/HomeRowsFragment.kt` | Modified | Fetches `isFavorite=true` BoxSets and appends curator rows after standard home sections |
-| `app/.../ui/home/HomeFragmentCuratorRow.kt` | **New** | Renders one home row per featured collection |
-| `CLAUDE.md` | **New** | AI assistant context (not relevant to the app) |
-| `FORK.md` | **New** | This file |
+### New files (zero conflict risk — upstream doesn't have these)
 
-New files we add will never conflict with upstream. Modified upstream files are where conflicts can occur — see below.
+| File | What it does |
+|------|-------------|
+| `app/.../ui/browsing/CuratorMovieGenrePickerFragment.kt` | Genre/collection picker shown when tapping Movies or TV Shows. Calls `GET /Curator/genre-collections`, shows a 6-column grid of curated collections with backdrop images. |
+| `app/.../ui/home/HomeFragmentCuratorRow.kt` | Renders one home screen row per featured Curator collection (`isFavorite=true` BoxSets). |
+| `app/.../ui/presentation/GenreCardPresenter.kt` | Compose-based 260×146dp card presenter for the genre picker grid. Includes focus border via `MutableState<Boolean>`. |
+| `app/.../ui/itemdetail/SubtitleHelper.kt` | Subtitle download for the detail screen. Shows existing subtitle tracks, language picker, OpenSubtitles search results (hash matches first), and downloads via Jellyfin server. |
+| `app/.../ui/playback/PlaybackSubtitleHelper.kt` | Same subtitle download flow wired into the player CC button. After download, stops and restarts playback at current position. |
+| `app/src/main/res/drawable/selector_card_focus.xml` | Focus border drawable (created but superseded by the `onFocusChanged` approach in code). |
+| `app/src/main/res/drawable/curator_symbol.png` | Transparent-bg symbol PNG for the Toolbar logo. |
+| `app/src/main/res/drawable/curator_symbol_sq.png` | Square transparent-bg symbol PNG for the adaptive icon foreground. |
+| `app/src/main/res/mipmap-*/app_icon.png` | Curator icon (logo only, no text). |
+| `app/src/main/res/mipmap-*/app_banner.png` | Curator banner (full logo + text, 16:9). |
+| `app/src/main/res/mipmap-anydpi-v26/app_icon.xml` | Adaptive icon XML — background=black, foreground=curator_symbol_sq.png. |
+| `app/src/main/res/drawable/app_logo.png` | Replaced Jellyfin vector with Curator PNG (splash screen logo). |
+| `CLAUDE.md` | AI assistant context — not relevant to the app. |
+| `FORK.md` | This file. |
+
+### Modified upstream files (conflict risk on merge)
+
+| File | Risk | What we changed |
+|------|------|-----------------|
+| `app/.../ui/home/HomeRowsFragment.kt` | **Medium** | Fetches `isFavorite=true` BoxSets and appends one curator row per collection after all standard home sections. Also added scroll-aware image loading via `RecyclerView.OnScrollListener` + `ScrollStateManager`. |
+| `app/.../ui/itemhandling/ItemLauncher.java` | **Medium** | `MOVIES` case → `movieGenrePicker(baseItem)`, `TVSHOWS` case → `tvShowGenrePicker(baseItem)`. Removed `LibraryPreferences` dependency from those two cases. |
+| `app/.../ui/itemdetail/FullDetailsFragment.java` | Low | Added subtitle button for `MOVIE` and `EPISODE` types, wired to `SubtitleHelperKt.showSubtitlePicker()`. |
+| `app/.../ui/card/LegacyImageCardView.java` | Low | Added `onFocusChanged` override to draw a 3dp `#00A4DC` border on `binding.mainImage` when focused. Also added `GradientDrawable` and `ContextCompat` imports. |
+| `app/.../ui/browsing/BrowseGridFragment.java` | Low | Reads optional `Extras.GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils`. |
+| `app/.../ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre: String?` param to `createBrowseGridItemsRequest()`. |
+| `app/.../ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()`, `tvShowGenrePicker()`, and `libraryBrowserByGenre()` destinations. |
+| `app/.../ui/playback/overlay/action/ClosedCaptionsAction.kt` | Low | Added "Download Subtitles" menu item at the bottom of the CC popup. Wired to `PlaybackSubtitleHelperKt.showSubtitleDownloader()`. |
+| `app/.../constant/Extras.kt` | Low | Added `GenreName` constant. |
+| `app/.../preference/UserPreferences.kt` | Low | `backdropEnabled` default changed to `false`. |
+| `app/.../data/repository/UserViewsRepository.kt` | Low | Added `CollectionType.BOXSETS` to `unsupportedCollectionTypes` — hides the Collections tile from the home screen. |
+| `app/.../ui/startup/StartupActivity.kt` | Low | Added 5s minimum splash duration, timer starts from session-found. |
+| `app/.../ui/startup/fragment/SplashFragment.kt` | Low | Background changed to `Color.Black`. |
+| `app/.../ui/shared/toolbar/Toolbar.kt` | Low | Logo uses `curator_symbol.png` at 64dp height instead of the full Jellyfin logo. |
+| `app/src/main/AndroidManifest.xml` | Low | `StartupActivity` uses `Theme.Jellyfin.Splash`. |
+| `app/src/main/res/layout/activity_main.xml` | Low | Toolbar logo tweaks. |
+| `app/src/main/res/values/strings.xml` | Low | Added curator branding strings and subtitle download strings. |
+| `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup. |
+| `app/src/main/res/drawable/app_icon_foreground.xml` | Low | Updated to reference `curator_symbol_sq.png`. |
+| `app/src/main/res/drawable/app_icon_background.xml` | Low | Background colour set to pure black. |
+| `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package. |
 
 ---
 
 ## Keeping in sync with upstream Jellyfin
 
-The official repo is tracked as the `upstream` remote (already configured). Run this whenever you want to pull in Jellyfin team changes:
+### Step 0 — check if Jellyfin has cut a new major release branch
+
+There is no automatic tracking. Run this first to see all available release branches:
 
 ```bash
-# 1. Fetch latest from official repo (no changes applied yet)
-git fetch upstream
-
-# 2. Check what they've added since your last sync
-git log --oneline master..upstream/master
-
-# 3. Merge their changes in
-git merge upstream/master
-
-# 4. If there are conflicts, resolve them (see below), then:
-git push origin master
-
-# 5. Optional: check what their changes touched
-git diff master upstream/master --name-only
+git fetch upstream && git branch -r | grep "upstream/release"
 ```
 
-### When there are no conflicts
+If a new branch appears (e.g. `upstream/release-0.20.z`), **do not switch to it blindly**. Build it, run it on the TV, and compare performance before rebasing onto it. Update the branch name in the commands below once you've validated it.
 
-Most upstream commits are translations, dependency bumps, and unrelated UI work. These merge cleanly with no action needed.
+### Regular sync (patch releases on the current branch)
 
-### When there are conflicts
+```bash
+# 1. Fetch latest from official repo
+git fetch upstream
 
-Conflicts will only occur in files we've modified (currently just `HomeRowsFragment.kt`). The pattern to resolve:
+# 2. Check what they've added since your last sync (RELEASE BRANCH ONLY)
+git log --oneline master..upstream/release-0.19.z
 
-1. Open the conflicted file — look for `<<<<<<<` markers
-2. Keep **both** sides: upstream's changes + ours
-3. Our curator additions are always at specific, isolated points (end of `onCreate`, bottom of the sections loop) — upstream changes are almost always elsewhere in the same files
-4. After resolving: `git add <file> && git merge --continue`
+# 3. Preview which files differ
+git diff master upstream/release-0.19.z --name-only
 
-If a conflict is messy, `git diff upstream/master...master -- <file>` shows exactly what we changed vs what they changed.
+# 4. Merge their release branch changes
+git merge upstream/release-0.19.z
 
----
+# 5. Resolve conflicts (see below), then:
+git push origin master
+```
 
-## Guiding principle for new features
+**Do NOT run `git merge upstream/master`** — that branch is pre-release development code and will reintroduce performance regressions.
 
-**Prefer new files over modifying existing upstream files.**
+When a new major release branch appears (e.g. `upstream/release-0.20.z`), build and test it before switching. Don't assume new major versions are better — we learned this lesson.
 
-- New Curator-specific UI → new Fragment/Activity subclasses, not edits to existing ones
-- If you must hook into an existing upstream file, keep the change minimal and in one clearly-marked block
-- This keeps the conflict surface small as upstream evolves
+### Resolving conflicts
 
-As our UI changes grow (nested folder browser, custom detail screens, etc.), we'll accumulate a list of modified files here so it's easy to see the full conflict surface at a glance.
+Conflicts will only occur in the modified upstream files listed above. The two medium-risk ones:
 
----
+**`HomeRowsFragment.kt`** — our curator additions are a self-contained block at the end of the main coroutine launched in `onCreate`. Upstream changes are almost always elsewhere (imports, other row logic). Keep both. If upstream removes an import we use, add it back.
 
-## Conflict risk map (updated as we add features)
+**`ItemLauncher.java`** — our change replaces the `MOVIES`/`TVSHOWS` cases with genre picker destinations. If upstream restructures the switch/when, re-apply our routing on top of their new structure.
 
-| File | Risk | Notes |
-|------|------|-------|
-| `ui/home/HomeRowsFragment.kt` | Low | Addition at the bottom of coroutine block; JF rarely touches this |
-| `ui/itemhandling/ItemLauncher.java` | Low | MOVIES case replaced with genre picker; split from TV shows case |
-| `ui/browsing/BrowseGridFragment.java` | Low | One extra line in `setupQueries()` to read genre arg |
-| `ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
-| `ui/navigation/Destinations.kt` | Low | Two new destination functions added |
-| `constant/Extras.kt` | Low | One new constant added |
-| `res/values/strings.xml` | Low | One new string added |
+For all other files, our changes are isolated single blocks that are clearly distinct from upstream's typical changes.
 
 ---
 
@@ -87,3 +117,13 @@ As our UI changes grow (nested folder browser, custom detail screens, etc.), we'
 |--------|-----|---------|
 | `origin` | `https://github.com/d3fragg3d/jellyfin-androidtv-curator.git` | Our fork |
 | `upstream` | `https://github.com/jellyfin/jellyfin-androidtv.git` | Official Jellyfin repo |
+
+---
+
+## Guiding principle for new features
+
+**Prefer new files over modifying existing upstream files.**
+
+- New Curator-specific UI → new Fragment/Kotlin file, not edits to existing ones
+- If you must hook into an existing upstream file, keep the change minimal and in one clearly-marked block
+- Add every modified upstream file to the table above immediately so the conflict surface stays documented

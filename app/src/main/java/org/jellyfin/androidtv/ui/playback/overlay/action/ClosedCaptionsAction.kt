@@ -10,8 +10,11 @@ import org.jellyfin.androidtv.ui.playback.PlaybackController
 import org.jellyfin.androidtv.ui.playback.overlay.CustomPlaybackTransportControlGlue
 import org.jellyfin.androidtv.ui.playback.overlay.VideoPlayerAdapter
 import org.jellyfin.androidtv.ui.playback.setSubtitleIndex
+import org.jellyfin.androidtv.ui.playback.showSubtitleDownloader
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+
+private const val MENU_ID_DOWNLOAD = -2
 
 class ClosedCaptionsAction(
 	context: Context,
@@ -53,13 +56,19 @@ class ClosedCaptionsAction(
 				}
 
 				setGroupCheckable(0, true, false)
+
+				add(1, MENU_ID_DOWNLOAD, order++, context.getString(R.string.lbl_download_subtitles))
 			}
 			setOnDismissListener {
 				videoPlayerAdapter.leanbackOverlayFragment.setFading(true)
 				popup = null
 			}
 			setOnMenuItemClickListener { item ->
-				playbackController.setSubtitleIndex(item.itemId)
+				if (item.itemId == MENU_ID_DOWNLOAD) {
+					playbackController.showSubtitleDownloader(context, view)
+				} else {
+					playbackController.setSubtitleIndex(item.itemId)
+				}
 				true
 			}
 		}

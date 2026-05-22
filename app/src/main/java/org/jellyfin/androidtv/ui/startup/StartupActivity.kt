@@ -54,6 +54,7 @@ class StartupActivity : FragmentActivity() {
 		const val EXTRA_ITEM_ID = "ItemId"
 		const val EXTRA_ITEM_IS_USER_VIEW = "ItemIsUserView"
 		const val EXTRA_HIDE_SPLASH = "HideSplash"
+		const val EXTRA_SPLASH_SHOWN_AT = "SplashShownAt"
 	}
 
 	private val startupViewModel: StartupViewModel by viewModel()
@@ -167,14 +168,10 @@ class StartupActivity : FragmentActivity() {
 		val intent = Intent(this, MainActivity::class.java)
 		// Clear navigation history
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_TASK_ON_HOME)
+		// Pass timing so MainActivity can hold its own overlay until rows have had time to load
+		intent.putExtra(EXTRA_SPLASH_SHOWN_AT, splashShownAt)
 		Timber.i("Opening next activity $intent")
-		// Start MainActivity immediately so home rows load behind the splash
 		startActivity(intent)
-
-		// Hold the splash visible for at least 5s so home rows have time to load
-		val elapsed = System.currentTimeMillis() - splashShownAt
-		val remaining = 5_000L - elapsed
-		if (remaining > 0) kotlinx.coroutines.delay(remaining)
 		finish()
 	}
 

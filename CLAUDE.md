@@ -35,6 +35,51 @@ adb connect 10.0.0.62:5555
 adb install -r app/build/outputs/apk/release/jellyfin-androidtv-v0.0.0-dev.1-release.apk
 ```
 
+## Local Emulator (Android TV)
+
+The emulator AVD `CuratorTV` is already created on this machine (API 34, 1080p Android TV, x86).
+
+### One-time setup (already done — notes for reference)
+
+SDK packages required beyond what ships with Android Studio:
+
+```bash
+JAVA_HOME=/opt/android-studio/jbr ~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager \
+  "emulator" \
+  "system-images;android-34;android-tv;x86"
+```
+
+Create the AVD:
+
+```bash
+echo "no" | JAVA_HOME=/opt/android-studio/jbr \
+  ~/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd \
+  -n "CuratorTV" \
+  -k "system-images;android-34;android-tv;x86" \
+  --device "tv_1080p"
+```
+
+### Starting the emulator
+
+The machine runs Hyprland (Wayland). The emulator must be launched from a terminal with display access — it cannot be started from within a Claude Code shell session. Hardware Vulkan is not available to the emulator, so use SwiftShader:
+
+```bash
+DISPLAY=:1 QT_QPA_PLATFORM=xcb \
+  ~/Android/Sdk/emulator/emulator -avd CuratorTV -gpu swiftshader_indirect -no-boot-anim &
+```
+
+Wait ~60s for first boot, then verify with `adb devices` (shows `device`, not `offline`).
+
+### Build → install → launch (debug, iterating on emulator)
+
+```bash
+JAVA_HOME=/opt/android-studio/jbr ./gradlew assembleDebug \
+  && ~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/jellyfin-androidtv-v0.0.0-dev.1-debug.apk \
+  && ~/Android/Sdk/platform-tools/adb shell am start -n tv.curator.app.debug/org.jellyfin.androidtv.ui.startup.StartupActivity
+```
+
+Note: the debug APK uses package ID `tv.curator.app.debug` (not `tv.curator.app`). The release APK uses the bare package ID.
+
 ## What's already been changed
 
 ### Key files modified/added
@@ -147,6 +192,17 @@ GET /Curator/movies/search?q={query}
 
 GET /Curator/genres
     → string[] — all genres across the library
+
+GET /Curator/genre-collections?mediaType=Movie|TvShow
+    → GenreCollectionInfo[] — Curator-managed genre collections for the browse UI.
+      Filtered by active month (Christmas collections absent outside December).
+      Fields: ruleId, name, mediaType, jellyfinId (BoxSet ID), itemCount, kidsOnly.
+
+GET /Curator/orphans
+    → { generatedAt, movies: OrphanItem[], shows: OrphanItem[] }
+      Items not matched by any genre collection after the last rebuild.
+      OrphanItem: { id, title, year, path }
+      Returns 204 if no rebuild has run yet.
 ```
 
 #### Rules CRUD (for reference — managed via web UI, not Android TV)
@@ -205,7 +261,75 @@ UserInfo {
 
 ## What needs to be built next (Android TV side)
 
-### 1. Collection Preferences UI (deferred — next Android TV work)
+### 1. Genre Collections — replace native genre picker with Curator collections ← CURRENT PRIORITY
+
+The genre picker (`CuratorMovieGenrePickerFragment`) currently calls Jellyfin's native `genresApi.getGenres()`. This needs to be replaced with the Curator plugin's genre collections API so the browse grid reflects our curated collections (Drama, Thriller, Period Dramas, etc.) rather than raw TMDB genre tags.
+
+#### New API endpoint
+
+```
+GET /Curator/genre-collections?mediaType=Movie
+GET /Curator/genre-collections?mediaType=TvShow
+→ GenreCollectionInfo[]
+```
+
+```typescript
+GenreCollectionInfo {
+  ruleId: string        // e.g. "drama"
+  name: string          // e.g. "Drama"
+  mediaType: string     // "Movie" or "TvShow"
+  jellyfinId: UUID      // Jellyfin BoxSet item ID — use this for navigation and images
+  itemCount: number
+  kidsOnly: boolean     // true = only show for Kids user
+}
+```
+
+The endpoint automatically filters out collections that aren't active this month (e.g. Christmas collections are absent in non-December months — they appear automatically in December with no client changes needed).
+
+#### What to change in `CuratorMovieGenrePickerFragment`
+
+1. **Replace the genre fetch** — instead of `api.genresApi.getGenres(parentId = folder.id)`, make an HTTP GET to `/Curator/genre-collections?mediaType=Movie` (or TvShow). Use `ApiClient` with a raw request or add a thin wrapper. The Curator plugin uses the same Jellyfin Bearer token auth the SDK already handles.
+
+2. **Kids filtering** — filter out entries where `kidsOnly = true` unless the current user is the Kids user (`userRepository.currentUser.value?.name == "Kids"`). Kids user should see only `kidsOnly = true` entries.
+
+3. **Images** — keep the existing backdrop approach. Replace the genre-name filter with `parentId = jellyfinId`:
+   ```kotlin
+   // OLD — filters library by genre name
+   api.itemsApi.getItems(parentId = folder.id, genres = setOf(name), ...)
+   
+   // NEW — fetches items directly from the BoxSet
+   api.itemsApi.getItems(parentId = genreCollection.jellyfinId, ...)
+   ```
+   Jellyfin also auto-generates a composite poster for every BoxSet (`/Items/{jellyfinId}/Images/Primary`) as a fallback if no backdrop is found.
+
+4. **Navigation on click** — instead of `Destinations.libraryBrowserByGenre(folder, item.name)` (which filters by native genre name), navigate to `Destinations.libraryBrowser(boxSetItem)` where `boxSetItem` is a minimal `BaseItemDto` constructed from the response:
+   ```kotlin
+   BaseItemDto(id = genreCollection.jellyfinId, name = genreCollection.name, type = BaseItemKind.BOX_SET)
+   ```
+   The existing `BrowseGridFragment` already handles BoxSet browsing via `parentId` — no changes needed there.
+
+5. **TV show genre picker** — apply the same changes to the TV equivalent, passing `mediaType=TvShow`.
+
+#### Making the HTTP call to Curator API
+
+The SDK's `ApiClient` doesn't have a generated method for Curator endpoints. Use a raw call:
+```kotlin
+val response = api.createPath("/Curator/genre-collections?mediaType=Movie")
+// or use a simple OkHttp/Ktor call with the same base URL and Authorization header the SDK uses
+```
+Alternatively, add a thin `CuratorApi` class that wraps `ApiClient.get()` — similar to how the existing SDK extensions work.
+
+#### Files to change
+
+| File | Change |
+|------|--------|
+| `CuratorMovieGenrePickerFragment.kt` | Replace `getGenres()` call with Curator API; update image fetch; update navigation |
+| (TV equivalent) | Same changes for TV show genre picker |
+| New `CuratorApi.kt` (optional) | Thin wrapper for Curator REST endpoints if raw calls feel messy |
+
+---
+
+### 2. Collection Preferences UI (deferred — next Android TV work)
 
 Per-user weighted rotation — users say "I want more Horror, less Romance" and the rotation respects it. Needs:
 

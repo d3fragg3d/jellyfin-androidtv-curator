@@ -1,13 +1,16 @@
 package org.jellyfin.androidtv.ui.presentation
 
+import android.graphics.Rect
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +29,7 @@ data class GenreCardItem(
 	val name: String,
 	val imageUrl: String?,
 	val isAllMovies: Boolean = false,
+	val collectionId: java.util.UUID? = null,
 )
 
 class GenreCardPresenter : Presenter() {
@@ -34,12 +38,20 @@ class GenreCardPresenter : Presenter() {
 		const val CARD_HEIGHT = 146
 	}
 
-	private class ComposeViewWrapper(composeView: ComposeView) : FrameLayout(composeView.context) {
+	private class ComposeViewWrapper(
+		composeView: ComposeView,
+		val focused: androidx.compose.runtime.MutableState<Boolean>,
+	) : FrameLayout(composeView.context) {
 		init {
 			isFocusable = true
 			isFocusableInTouchMode = true
 			descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
 			addView(composeView)
+		}
+
+		override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+			super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+			focused.value = gainFocus
 		}
 
 		override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -50,15 +62,21 @@ class GenreCardPresenter : Presenter() {
 
 	inner class ViewHolder(
 		private val composeView: ComposeView,
-	) : Presenter.ViewHolder(ComposeViewWrapper(composeView)) {
+		private val focused: androidx.compose.runtime.MutableState<Boolean> = mutableStateOf(false),
+	) : Presenter.ViewHolder(ComposeViewWrapper(composeView, focused)) {
 		fun bind(item: GenreCardItem) = composeView.setContent {
 			val bgColor = if (item.isAllMovies) Color(0xFF00A4DC) else Color(0xFF1A237E)
+			val shape = RoundedCornerShape(4.dp)
 
 			Box(
 				modifier = Modifier
 					.size(CARD_WIDTH.dp, CARD_HEIGHT.dp)
-					.clip(RoundedCornerShape(4.dp))
-					.background(bgColor),
+					.clip(shape)
+					.background(bgColor)
+					.then(
+						if (focused.value) Modifier.border(3.dp, Color(0xFF00A4DC), shape)
+						else Modifier
+					),
 			) {
 				if (item.imageUrl != null) {
 					AsyncImage(

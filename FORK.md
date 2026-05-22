@@ -4,14 +4,19 @@ This is a personal fork of [jellyfin/jellyfin-androidtv](https://github.com/jell
 
 ---
 
-## ⚠️ CRITICAL: Which upstream branch we track
+## Branch structure
 
-**We track `upstream/release-0.19.z` — NEVER `upstream/master`.**
+| Branch | Purpose |
+|--------|---------|
+| `master` (our fork) | Our single working branch — all Curator changes live here |
+| `upstream/release-0.19.z` | The Jellyfin Play Store release branch — the only upstream source we ever merge from |
 
-- `upstream/release-0.19.z` is the Play Store build. It is stable, performant, and QA'd.
-- `upstream/master` is pre-release development code. It is significantly less performant and has not been through QA. We discovered this the hard way — master-based builds are noticeably slower and rougher than the Play Store release.
+**We never merge from `upstream/master`.**
 
-Every sync command below uses `release-0.19.z`. Do not change this without testing the new major branch thoroughly first.
+- `upstream/release-0.19.z` is the Play Store build — stable, performant, QA'd.
+- `upstream/master` is pre-release development code. It is significantly less performant and has not been through QA. We learned this the hard way — master-based builds are noticeably slower than the Play Store release.
+
+Our `master` branch is seeded from `upstream/release-0.19.z` and contains our Curator additions on top. Syncing upstream means merging the latest `upstream/release-0.19.z` patches into our `master`.
 
 ---
 

@@ -96,7 +96,12 @@ git diff master upstream/release-0.19.z --name-only
 # 4. Merge their release branch changes
 git merge upstream/release-0.19.z
 
-# 5. Resolve conflicts (see below), then:
+# 5. Resolve conflicts if any (see below)
+
+# 6. ALWAYS build after a merge — catches any API/signature breakage early
+export JAVA_HOME=/opt/android-studio/jbr && ./gradlew assembleDebug
+
+# 7. Push
 git push origin master
 ```
 

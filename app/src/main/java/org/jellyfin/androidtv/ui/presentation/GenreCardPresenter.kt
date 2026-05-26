@@ -30,6 +30,7 @@ data class GenreCardItem(
 	val imageUrl: String?,
 	val isAllMovies: Boolean = false,
 	val collectionId: java.util.UUID? = null,
+	val genreNames: List<String> = emptyList(),
 )
 
 class GenreCardPresenter : Presenter() {

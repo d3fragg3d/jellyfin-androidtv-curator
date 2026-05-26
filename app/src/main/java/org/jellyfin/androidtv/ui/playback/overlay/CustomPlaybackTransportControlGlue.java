@@ -243,7 +243,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             primaryActionsAdapter.add(fastForwardAction);
         }
 
-        if (playerAdapter.hasSubs()) {
+        if (playerAdapter.hasSubs() || !playerAdapter.isLiveTv()) {
             primaryActionsAdapter.add(closedCaptionsAction);
         }
 

@@ -1,16 +1,29 @@
 package org.jellyfin.androidtv.ui.preference.screen
 
 import org.jellyfin.androidtv.R
+import org.jellyfin.androidtv.ui.navigation.Destinations
+import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.preference.category.aboutCategory
 import org.jellyfin.androidtv.ui.preference.dsl.OptionsFragment
+import org.jellyfin.androidtv.ui.preference.dsl.action
 import org.jellyfin.androidtv.ui.preference.dsl.link
 import org.jellyfin.androidtv.ui.preference.dsl.optionsScreen
+import org.koin.android.ext.android.inject
 
 class UserPreferencesScreen : OptionsFragment() {
+	private val navigationRepository by inject<NavigationRepository>()
+
 	override val screen by optionsScreen {
 		setTitle(R.string.settings_title)
 
 		category {
+			action {
+				setTitle(R.string.pref_genre_preferences)
+				setContent(R.string.pref_genre_preferences_description)
+				icon = R.drawable.ic_star
+				onActivate = { navigationRepository.navigate(Destinations.genrePreferences) }
+			}
+
 			link {
 				setTitle(R.string.pref_login)
 				setContent(R.string.pref_login_description)

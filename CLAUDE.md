@@ -10,7 +10,7 @@ A fork of the official Jellyfin Android TV app, modified to display Netflix-styl
 
 | Thing | Value |
 |-------|-------|
-| Jellyfin server | `http://10.0.20.2:8096` (TrueNAS Scale) |
+| Jellyfin server | `http://10.0.20.2:30013` (TrueNAS Scale) |
 | Curator plugin dir | `/mnt/Media/Jellyfin/plugins/Curator/` on TrueNAS |
 | Android TV (Sony) | `10.0.0.62:5555` (ADB over WiFi) |
 | Branch | `master` (tracks `upstream/release-0.19.z` — **NOT** upstream/master) |
@@ -146,6 +146,20 @@ POST /Curator/purge
      → Deletes all Jellyfin BoxSet collections (use before a fresh rebuild)
 ```
 
+#### Per-user Preferences
+
+Controls rotation weighting — preferred collections appear more often, avoided collections are skipped for that user.
+
+```
+GET    /Curator/users/{userId}/preferences
+       → UserPreferences { preferredRuleIds: string[], avoidedRuleIds: string[] }
+
+POST   /Curator/users/{userId}/preferences
+       body: UserPreferences — replaces all preferences for the user
+```
+
+Rotation effect: preferred = 3× weight in draw, avoided = excluded. Preferred collections bypass the "not recently featured" cycling filter.
+
 #### Per-user Blocks
 
 Blocks filter which collections get *featured* at rotation time — not the content of collections. If a user blocks Horror, horror-only collections won't be featured for them. Applies to ALL collections including Picks of the Week.
@@ -218,7 +232,7 @@ PUT    /Curator/global-settings   body: { excludeKeywords: string[], excludePath
 
 ```
 GET /Curator/ui   → HTML page (anonymous, no auth required)
-    Accessible at http://10.0.20.2:8096/Curator/ui
+    Accessible at http://10.0.20.2:30013/Curator/ui
 ```
 
 ### Data models
@@ -261,11 +275,38 @@ UserInfo {
 
 ## What needs to be built next (Android TV side)
 
-### 1. Genre Collections — replace native genre picker with Curator collections ← CURRENT PRIORITY
+### 1. Genre Preferences — settings screen for tuning home screen rotation ← CURRENT PRIORITY
+
+Built but not yet deployed to server. Two pieces:
+
+**Server (Curator plugin):**
+- `Models/UserPreferences.cs` — data model
+- `GET /Curator/users/{userId}/preferences` + `POST` — read/write
+- `RotateHomepageAsync` changed from global random pick to per-user weighted draw
+
+**Android TV:**
+- `CuratorGenrePreferencesFragment` — genre grid with ▲ More / ▼ Less badges, saves on exit
+- Entry point: Settings → "Genre Preferences" (first item in UserPreferencesScreen)
+- Pressing a card cycles: neutral → preferred (green) → avoided (red) → neutral
+
+**Not yet deployed.** Server DLL needs to be dropped onto TrueNAS and Jellyfin restarted before the Android app changes take effect.
+
+---
+
+### 2. Genre Collections — replace native genre picker with Curator collections
 
 The genre picker (`CuratorMovieGenrePickerFragment`) currently calls Jellyfin's native `genresApi.getGenres()`. This needs to be replaced with the Curator plugin's genre collections API so the browse grid reflects our curated collections (Drama, Thriller, Period Dramas, etc.) rather than raw TMDB genre tags.
 
-#### New API endpoint
+#### Why there are two collection types — IMPORTANT
+
+The Curator plugin uses a **hybrid native/custom** architecture for genre collections. This was introduced to avoid server crashes: large pure-genre BoxSets (Action: 1166 items, Horror: 1081 items) caused Jellyfin OOM crashes when clients loaded them. The solution:
+
+- **`type: "native"`** — standard genres (Action, Horror, Comedy, Drama, etc.) that map directly to Jellyfin's own genre metadata. These are **not BoxSets** — `jellyfinId` is `null`. The app must query Jellyfin's native `/Items?Genres=X` paginated API to browse them.
+- **`type: "custom"`** — keyword/path-based collections (Period Drama, Cyberpunk, Found Footage, 4K, Disney, etc.) that can't be expressed as a native genre query. These **are BoxSets** — `jellyfinId` is set. Use `parentId = jellyfinId` as before.
+
+A collection is auto-classified as `native` by the server if its only criteria are `anyGenres`/`excludeGenres` with no keyword, path, rating, or year filters. Everything else is `custom`.
+
+#### API endpoint
 
 ```
 GET /Curator/genre-collections?mediaType=Movie
@@ -275,57 +316,120 @@ GET /Curator/genre-collections?mediaType=TvShow
 
 ```typescript
 GenreCollectionInfo {
-  ruleId: string        // e.g. "drama"
-  name: string          // e.g. "Drama"
-  mediaType: string     // "Movie" or "TvShow"
-  jellyfinId: UUID      // Jellyfin BoxSet item ID — use this for navigation and images
-  itemCount: number
-  kidsOnly: boolean     // true = only show for Kids user
+  ruleId: string          // e.g. "action", "period-drama"
+  name: string            // e.g. "Action", "Period Drama"
+  mediaType: string       // "Movie" or "TvShow"
+  type: string            // "native" or "custom"  ← key field
+  genres: string[]        // native only: genre names to filter by (e.g. ["Action"])
+  excludeGenres: string[] // native only: genres to exclude
+  jellyfinId: UUID | null // custom only: BoxSet ID; null for native
+  itemCount: number       // estimated count (from BoxSet for custom; 0 for native — ignore for native)
+  kidsOnly: boolean       // true = only show for Kids user
 }
 ```
 
-The endpoint automatically filters out collections that aren't active this month (e.g. Christmas collections are absent in non-December months — they appear automatically in December with no client changes needed).
+The endpoint automatically filters out collections that aren't active this month (e.g. Christmas collections are absent in non-December months).
 
 #### What to change in `CuratorMovieGenrePickerFragment`
 
-1. **Replace the genre fetch** — instead of `api.genresApi.getGenres(parentId = folder.id)`, make an HTTP GET to `/Curator/genre-collections?mediaType=Movie` (or TvShow). Use `ApiClient` with a raw request or add a thin wrapper. The Curator plugin uses the same Jellyfin Bearer token auth the SDK already handles.
+**Step 1 — Replace the genre fetch**
 
-2. **Kids filtering** — filter out entries where `kidsOnly = true` unless the current user is the Kids user (`userRepository.currentUser.value?.name == "Kids"`). Kids user should see only `kidsOnly = true` entries.
+Instead of `api.genresApi.getGenres(parentId = folder.id)`, make a GET to `/Curator/genre-collections?mediaType=Movie`. Add a thin `CuratorApi` class (see below) for this.
 
-3. **Images** — keep the existing backdrop approach. Replace the genre-name filter with `parentId = jellyfinId`:
-   ```kotlin
-   // OLD — filters library by genre name
-   api.itemsApi.getItems(parentId = folder.id, genres = setOf(name), ...)
-   
-   // NEW — fetches items directly from the BoxSet
-   api.itemsApi.getItems(parentId = genreCollection.jellyfinId, ...)
-   ```
-   Jellyfin also auto-generates a composite poster for every BoxSet (`/Items/{jellyfinId}/Images/Primary`) as a fallback if no backdrop is found.
+**Step 2 — Kids filtering**
 
-4. **Navigation on click** — instead of `Destinations.libraryBrowserByGenre(folder, item.name)` (which filters by native genre name), navigate to `Destinations.libraryBrowser(boxSetItem)` where `boxSetItem` is a minimal `BaseItemDto` constructed from the response:
-   ```kotlin
-   BaseItemDto(id = genreCollection.jellyfinId, name = genreCollection.name, type = BaseItemKind.BOX_SET)
-   ```
-   The existing `BrowseGridFragment` already handles BoxSet browsing via `parentId` — no changes needed there.
+Filter out entries where `kidsOnly = true` unless the current user is the Kids user. Kids user should see only `kidsOnly = true` entries.
 
-5. **TV show genre picker** — apply the same changes to the TV equivalent, passing `mediaType=TvShow`.
+**Step 3 — Images for the genre card grid**
+
+For card backdrop images, the existing approach fetches a random item from the collection and uses its backdrop. Handle both types:
+
+```kotlin
+// custom: fetch from BoxSet
+api.itemsApi.getItems(parentId = genreCollection.jellyfinId, includeItemTypes = setOf(BaseItemKind.MOVIE), limit = 10, ...)
+
+// native: fetch from Jellyfin genres filter
+api.itemsApi.getItems(
+    genres = genreCollection.genres.toSet(),
+    excludeGenres = genreCollection.excludeGenres.toSet(),
+    includeItemTypes = setOf(BaseItemKind.MOVIE),
+    limit = 10,
+    recursive = true,
+    ...
+)
+```
+
+Jellyfin auto-generates a composite poster for every BoxSet at `/Items/{jellyfinId}/Images/Primary` — useful as a fallback for custom collections if no backdrop is found.
+
+**Step 4 — Navigation on click**
+
+The destination depends on type:
+
+```kotlin
+when (genreCollection.type) {
+    "custom" -> {
+        // Navigate to BoxSet browser — BrowseGridFragment handles this via parentId
+        val boxSetItem = BaseItemDto(
+            id = genreCollection.jellyfinId!!,
+            name = genreCollection.name,
+            type = BaseItemKind.BOX_SET
+        )
+        Destinations.libraryBrowser(boxSetItem)
+    }
+    "native" -> {
+        // Navigate using genre name filter — same as the old pre-Curator approach
+        // Destinations.libraryBrowserByGenre(folder, genreCollection.genres.first())
+        // OR pass genres list through to BrowseGridFragment via extras
+        Destinations.libraryBrowserByGenre(folder, genreCollection.genres.first())
+    }
+}
+```
+
+For native collections, `libraryBrowserByGenre` already exists and uses Jellyfin's `/Items?Genres=X` — it paginates correctly and doesn't have the OOM problem. This is exactly what we want for native genres.
+
+**Step 5 — TV show genre picker**
+
+Apply the same changes to the TV equivalent, passing `mediaType=TvShow`.
 
 #### Making the HTTP call to Curator API
 
-The SDK's `ApiClient` doesn't have a generated method for Curator endpoints. Use a raw call:
+The Jellyfin SDK doesn't have a generated method for Curator endpoints. Add a thin wrapper:
+
 ```kotlin
-val response = api.createPath("/Curator/genre-collections?mediaType=Movie")
-// or use a simple OkHttp/Ktor call with the same base URL and Authorization header the SDK uses
+// CuratorApi.kt
+class CuratorApi(private val api: ApiClient) {
+    suspend fun getGenreCollections(mediaType: String): List<GenreCollectionInfo> {
+        val response = api.get<List<GenreCollectionInfo>>(
+            pathTemplate = "/Curator/genre-collections",
+            queryParameters = mapOf("mediaType" to mediaType)
+        )
+        return response.content
+    }
+}
+
+data class GenreCollectionInfo(
+    val ruleId: String,
+    val name: String,
+    val mediaType: String,
+    val type: String,           // "native" or "custom"
+    val genres: List<String>,
+    val excludeGenres: List<String>,
+    val jellyfinId: UUID?,
+    val itemCount: Int,
+    val kidsOnly: Boolean
+)
 ```
-Alternatively, add a thin `CuratorApi` class that wraps `ApiClient.get()` — similar to how the existing SDK extensions work.
+
+Inject via Koin alongside the existing API clients. The `ApiClient` handles auth automatically.
 
 #### Files to change
 
 | File | Change |
 |------|--------|
-| `CuratorMovieGenrePickerFragment.kt` | Replace `getGenres()` call with Curator API; update image fetch; update navigation |
-| (TV equivalent) | Same changes for TV show genre picker |
-| New `CuratorApi.kt` (optional) | Thin wrapper for Curator REST endpoints if raw calls feel messy |
+| `CuratorMovieGenrePickerFragment.kt` | Replace `getGenres()` with Curator API; split image/nav logic on `type` |
+| TV show genre picker equivalent | Same changes, `mediaType=TvShow` |
+| New `CuratorApi.kt` | Thin wrapper + data models for Curator REST endpoints |
+| Koin module | Register `CuratorApi` as singleton |
 
 ---
 
@@ -396,7 +500,8 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/home/HomeFragmentCuratorRow.kt` | None | New file — no upstream equivalent |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorMovieGenrePickerFragment.kt` | None | New file — genre picker grid shown when Movies library is opened |
 | `app/src/main/java/org/jellyfin/androidtv/constant/Extras.kt` | Low | Added `GenreName` constant |
-| `app/src/main/java/org/jellyfin/androidtv/ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()`, `tvShowGenrePicker()`, and `libraryBrowserByGenre()` destinations |
+| `app/src/main/java/org/jellyfin/androidtv/ui/navigation/Destinations.kt` | Low | Added `movieGenrePicker()`, `tvShowGenrePicker()`, `libraryBrowserByGenre()`, and `genrePreferences` destinations |
+| `app/src/main/java/org/jellyfin/androidtv/ui/preference/screen/UserPreferencesScreen.kt` | Low | Added "Genre Preferences" action at top of settings screen |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowsingUtils.kt` | Low | Added optional `genre` param to `createBrowseGridItemsRequest()` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` → `movieGenrePicker`, `TVSHOWS` → `tvShowGenrePicker`; removed LibraryPreferences dependency |
@@ -407,6 +512,8 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/preference/UserPreferences.kt` | Low | `backdropEnabled` default changed to false |
 | `app/src/main/java/org/jellyfin/androidtv/data/repository/UserViewsRepository.kt` | Low | Added `CollectionType.BOXSETS` to unsupportedCollectionTypes — hides Collections tile from home |
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenreCardPresenter.kt` | None | New file — 260×146dp image card presenter for genre picker |
+| `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenrePreferencePresenter.kt` | None | New file — 260×130dp card presenter with ▲/▼ state badges for preferences screen |
+| `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorGenrePreferencesFragment.kt` | None | New file — genre preferences screen (VerticalGrid, 4 cols, cycles NONE→PREFERRED→AVOIDED on press, saves on stop) |
 | `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`; replaced user-visible "Jellyfin" brand strings with "Curator" |
 | `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
 | `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |

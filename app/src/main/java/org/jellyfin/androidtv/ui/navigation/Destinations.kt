@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.navigation
 import kotlinx.serialization.json.Json
 import org.jellyfin.androidtv.constant.Extras
 import org.jellyfin.androidtv.ui.browsing.BrowseGridFragment
+import org.jellyfin.androidtv.ui.browsing.CuratorGenrePreferencesFragment
 import org.jellyfin.androidtv.ui.browsing.CuratorMovieGenrePickerFragment
 import org.jellyfin.androidtv.ui.browsing.BrowseRecordingsFragment
 import org.jellyfin.androidtv.ui.browsing.BrowseScheduleFragment
@@ -72,6 +73,8 @@ object Destinations {
 			Extras.Folder to Json.encodeToString(item),
 			Extras.IncludeType to "Movie",
 		)
+
+	val genrePreferences = fragmentDestination<CuratorGenrePreferencesFragment>()
 
 	fun tvShowGenrePicker(item: BaseItemDto) =
 		fragmentDestination<CuratorMovieGenrePickerFragment>(

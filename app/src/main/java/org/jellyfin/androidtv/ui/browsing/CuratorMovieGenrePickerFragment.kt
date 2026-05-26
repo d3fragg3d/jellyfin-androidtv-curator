@@ -23,6 +23,7 @@ import org.jellyfin.androidtv.ui.presentation.GenreCardItem
 import org.jellyfin.androidtv.ui.presentation.GenreCardPresenter
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpMethod
+import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -34,11 +35,14 @@ import org.koin.android.ext.android.inject
 import java.util.UUID
 
 @Serializable
-private data class GenreCollectionInfo(
+internal data class GenreCollectionInfo(
 	@SerialName("RuleId") val ruleId: String,
 	@SerialName("Name") val name: String,
 	@SerialName("MediaType") val mediaType: String,
-	@SerialName("JellyfinId") val jellyfinId: String?,
+	@SerialName("Type") val type: String,
+	@SerialName("Genres") val genres: List<String> = emptyList(),
+	@SerialName("ExcludeGenres") val excludeGenres: List<String> = emptyList(),
+	@SerialName("JellyfinId") val jellyfinId: String? = null,
 	@SerialName("ItemCount") val itemCount: Int,
 	@SerialName("KidsOnly") val kidsOnly: Boolean,
 )
@@ -56,6 +60,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 
 	private lateinit var folder: BaseItemDto
 	private var includeType: BaseItemKind = BaseItemKind.MOVIE
+	private lateinit var rowAdapter: ArrayObjectAdapter
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -69,33 +74,41 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 		gridPresenter.numberOfColumns = COLUMNS
 		setGridPresenter(gridPresenter)
 
-		val adapter = ArrayObjectAdapter(GenreCardPresenter())
-		setAdapter(adapter)
+		rowAdapter = ArrayObjectAdapter(GenreCardPresenter())
+		setAdapter(rowAdapter)
 
 		onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
 			if (item !is GenreCardItem) return@OnItemViewClickedListener
-			if (item.isAllMovies) {
-				navigationRepository.navigate(Destinations.libraryBrowser(folder))
-			} else if (item.collectionId != null) {
-				val boxSet = BaseItemDto(
-					id = item.collectionId,
-					name = item.name,
-					type = BaseItemKind.BOX_SET,
-					displayPreferencesId = item.collectionId.toString(),
-				)
-				navigationRepository.navigate(Destinations.libraryBrowser(boxSet))
+			when {
+				item.isAllMovies -> {
+					navigationRepository.navigate(Destinations.libraryBrowser(folder))
+				}
+				item.collectionId != null -> {
+					val boxSet = BaseItemDto(
+						id = item.collectionId,
+						name = item.name,
+						type = BaseItemKind.BOX_SET,
+						displayPreferencesId = item.collectionId.toString(),
+					)
+					navigationRepository.navigate(Destinations.libraryBrowser(boxSet))
+				}
+				item.genreNames.isNotEmpty() -> {
+					navigationRepository.navigate(
+						Destinations.libraryBrowserByGenre(folder, item.genreNames.first())
+					)
+				}
 			}
 		}
-
-		loadCollections(adapter)
 	}
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
 		progressBarManager.enableProgressBar()
+		loadCollections(rowAdapter)
 	}
 
 	private fun loadCollections(adapter: ArrayObjectAdapter) {
+		if (adapter.size() > 0) return
 		lifecycleScope.launch {
 			progressBarManager.show()
 
@@ -103,7 +116,6 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 			val isKidsUser = userRepository.currentUser.value?.name == "Kids"
 			val userId = userRepository.currentUser.value?.id
 
-			// Fetch collection list
 			val collections = withContext(Dispatchers.IO) {
 				runCatching {
 					val response = api.request(
@@ -117,17 +129,17 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 				}.getOrDefault(emptyList())
 			}
 
-			// Resolve hex UUIDs
-			val resolved = collections.mapNotNull { collection ->
-				val hex = collection.jellyfinId ?: return@mapNotNull null
-				runCatching {
-					val h = hex.replace("-", "")
-					UUID.fromString("${h.substring(0,8)}-${h.substring(8,12)}-${h.substring(12,16)}-${h.substring(16,20)}-${h.substring(20)}")
-				}.getOrNull()?.let { id -> collection to id }
+			// Pre-parse UUIDs for custom collections so we don't duplicate the logic
+			val customIds: List<UUID?> = collections.map { collection ->
+				if (collection.type == "custom" && collection.jellyfinId != null) {
+					val h = collection.jellyfinId.replace("-", "")
+					runCatching {
+						UUID.fromString("${h.substring(0,8)}-${h.substring(8,12)}-${h.substring(12,16)}-${h.substring(16,20)}-${h.substring(20)}")
+					}.getOrNull()
+				} else null
 			}
 
-			// Fetch all images in parallel
-			fun fetchBackdrop(parentId: UUID) = async(Dispatchers.IO) {
+			fun fetchBackdropByParentId(parentId: UUID) = async(Dispatchers.IO) {
 				runCatching {
 					val result by api.itemsApi.getItems(
 						userId = userId,
@@ -146,17 +158,63 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 				}.getOrNull()
 			}
 
-			val allMoviesImageDeferred = fetchBackdrop(folder.id!!)
-			val collectionImageDeferreds = resolved.map { (_, id) -> fetchBackdrop(id) }
+			fun fetchBackdropByGenres(genres: List<String>) = async(Dispatchers.IO) {
+				runCatching {
+					val result by api.itemsApi.getItems(
+						userId = userId,
+						genres = genres.toSet(),
+						includeItemTypes = setOf(includeType),
+						recursive = true,
+						limit = 10,
+						sortBy = setOf(ItemSortBy.RANDOM),
+						enableImages = true,
+						imageTypeLimit = 1,
+						enableImageTypes = setOf(ImageType.BACKDROP),
+					)
+					result.items?.firstNotNullOfOrNull { item ->
+						item.itemBackdropImages.firstOrNull()?.getUrl(api, maxWidth = 520, maxHeight = 292)
+					}
+				}.getOrNull()
+			}
+
+			val allMoviesImageDeferred = fetchBackdropByParentId(folder.id!!)
+			val collectionImageDeferreds = collections.mapIndexed { index, collection ->
+				when (collection.type) {
+					"custom" -> customIds[index]?.let { fetchBackdropByParentId(it) }
+					"native" -> fetchBackdropByGenres(collection.genres)
+					else -> null
+				}
+			}
 
 			val allMoviesImage = allMoviesImageDeferred.await()
-			val collectionImages = collectionImageDeferreds.map { it.await() }
+			val collectionImages = collectionImageDeferreds.map { it?.await() }
 
-			// Add everything at once
 			adapter.add(GenreCardItem("All ${folder.name}", allMoviesImage, isAllMovies = true))
-			resolved.zip(collectionImages).forEach { (pair, imageUrl) ->
-				val (collection, collectionId) = pair
-				adapter.add(GenreCardItem(collection.name, imageUrl, collectionId = collectionId))
+			collections.forEachIndexed { index, collection ->
+				val collectionId = customIds[index]
+				val imageUrl = collectionImages[index]
+					?: collectionId?.let {
+						api.imageApi.getItemImageUrl(
+							itemId = it,
+							imageType = ImageType.PRIMARY,
+							maxWidth = 520,
+							maxHeight = 292,
+						)
+					}
+				val cardItem = when (collection.type) {
+					"custom" -> GenreCardItem(
+						name = collection.name,
+						imageUrl = imageUrl,
+						collectionId = collectionId,
+					)
+					"native" -> GenreCardItem(
+						name = collection.name,
+						imageUrl = imageUrl,
+						genreNames = collection.genres,
+					)
+					else -> return@forEachIndexed
+				}
+				adapter.add(cardItem)
 			}
 
 			progressBarManager.hide()

@@ -35,6 +35,8 @@
     <string name="lbl_collections">Collections</string>
     <string name="lbl_movies">Movies</string>
     <string name="lbl_all_movies">All Movies</string>
+    <string name="pref_genre_preferences">Genre Preferences</string>
+    <string name="pref_genre_preferences_description">Tune what appears on your home screen</string>
     <string name="lbl_tv_series">TV series</string>
     <string name="lbl_other">Other</string>
     <string name="because_you_watched">Because you watched %1$s</string>
@@ -151,7 +153,12 @@
     <string name="subtitle_no_results">No subtitles found</string>
     <string name="subtitle_downloaded">Subtitle downloaded</string>
     <string name="subtitle_downloaded_select">Subtitle downloaded — select it from the CC menu</string>
+    <string name="subtitle_how_to_use">Start playback and select this subtitle from the CC menu to activate it.</string>
     <string name="subtitle_download_failed">Subtitle download failed</string>
+    <string name="subtitle_delete">Delete subtitle</string>
+    <string name="subtitle_delete_track">Delete Subtitle…</string>
+    <string name="subtitle_deleted">Subtitle deleted</string>
+    <string name="subtitle_delete_failed">Failed to delete subtitle</string>
     <string name="msg_subtitles_loading">Subtitles loading…</string>
     <string name="msg_unable_load_subs">Unable to load subtitle</string>
     <string name="msg_burn_sub_warning">Burning in subtitles. This may take a few seconds…</string>

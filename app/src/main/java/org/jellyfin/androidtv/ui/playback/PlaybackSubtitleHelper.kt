@@ -11,11 +11,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.androidtv.R
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.subtitleApi
+import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.RemoteSubtitleInfo
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -133,12 +137,34 @@ private fun PlaybackController.showSubtitleResults(
         .show()
 }
 
+fun PlaybackController.deletePlayerSubtitle(context: Context, index: Int) {
+    val api by fragment.inject<ApiClient>()
+    val itemId = getCurrentlyPlayingItem()?.id ?: return
+    fragment.lifecycleScope.launch {
+        val success = withContext(Dispatchers.IO) {
+            runCatching { api.subtitleApi.deleteSubtitle(itemId, index) }
+                .onFailure { Timber.e(it, "Failed to delete subtitle index=$index for $itemId") }
+                .isSuccess
+        }
+        val message = if (success) R.string.subtitle_deleted else R.string.subtitle_delete_failed
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+}
+
 private fun PlaybackController.downloadSubtitle(
     api: ApiClient,
     context: Context,
     itemId: UUID,
     subtitleId: String,
 ) {
+    // Capture existing subtitle stream indices before download so we can identify the new one
+    val existingSubIndices = getCurrentlyPlayingItem()
+        ?.mediaSources
+        ?.flatMap { it.mediaStreams ?: emptyList() }
+        ?.filter { it.type == MediaStreamType.SUBTITLE }
+        ?.mapNotNull { it.index }
+        ?.toSet() ?: emptySet()
+
     fragment.lifecycleScope.launch {
         val success = withContext(Dispatchers.IO) {
             runCatching { api.subtitleApi.downloadRemoteSubtitles(itemId, subtitleId) }
@@ -146,13 +172,41 @@ private fun PlaybackController.downloadSubtitle(
                 .isSuccess
         }
 
-        if (success) {
-            val position = mCurrentPosition
-            stop()
-            play(position, -1)
-            Toast.makeText(context, R.string.subtitle_downloaded_select, Toast.LENGTH_LONG).show()
-        } else {
+        if (!success) {
             Toast.makeText(context, R.string.subtitle_download_failed, Toast.LENGTH_SHORT).show()
+            return@launch
+        }
+
+        // Give Jellyfin a moment to register the downloaded subtitle before re-fetching
+        delay(1000)
+
+        // Re-fetch the item to get fresh media streams including the new subtitle
+        val newSubIndex = withContext(Dispatchers.IO) {
+            runCatching {
+                val updatedItem = api.userLibraryApi.getItem(itemId = itemId).content
+                // Update the playing item so buildExoPlayerOptions uses fresh media sources
+                @Suppress("UNCHECKED_CAST")
+                (mItems as? MutableList<BaseItemDto>)?.set(mCurrentIndex, updatedItem)
+                updatedItem.mediaSources
+                    ?.flatMap { it.mediaStreams ?: emptyList() }
+                    ?.filter { it.type == MediaStreamType.SUBTITLE }
+                    ?.mapNotNull { it.index }
+                    ?.firstOrNull { it !in existingSubIndices }
+            }.getOrElse {
+                Timber.e(it, "Failed to re-fetch item after subtitle download")
+                null
+            }
+        }
+
+        val position = mCurrentPosition
+        stop()
+        if (newSubIndex != null) {
+            play(position, newSubIndex)
+            Toast.makeText(context, R.string.subtitle_downloaded, Toast.LENGTH_SHORT).show()
+        } else {
+            // Re-fetch didn't find the new stream yet — restart cleanly so user can pick from CC menu
+            play(position, null)
+            Toast.makeText(context, R.string.subtitle_downloaded_select, Toast.LENGTH_LONG).show()
         }
     }
 }

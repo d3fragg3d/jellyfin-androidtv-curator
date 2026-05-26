@@ -67,12 +67,42 @@ private fun FullDetailsFragment.showExistingSubtitlesDialog(
 
     AlertDialog.Builder(requireContext())
         .setTitle(R.string.lbl_subtitle_track)
-        .setItems(labels) { _, _ -> }
+        .setItems(labels) { _, index ->
+            showSubtitleActionsDialog(api, itemId, existing[index])
+        }
         .setNeutralButton(R.string.lbl_download_subtitles) { _, _ ->
             showLanguagePicker(anchor, api, itemId)
         }
         .setNegativeButton(R.string.lbl_cancel, null)
         .show()
+}
+
+private fun FullDetailsFragment.showSubtitleActionsDialog(
+    api: ApiClient,
+    itemId: UUID,
+    stream: MediaStream,
+) {
+    val title = stream.displayTitle ?: stream.language?.uppercase() ?: "Subtitle"
+    AlertDialog.Builder(requireContext())
+        .setTitle(title)
+        .setMessage(R.string.subtitle_how_to_use)
+        .setPositiveButton(R.string.lbl_ok, null)
+        .setNegativeButton(R.string.subtitle_delete) { _, _ ->
+            deleteExistingSubtitle(api, itemId, stream.index ?: return@setNegativeButton)
+        }
+        .show()
+}
+
+private fun FullDetailsFragment.deleteExistingSubtitle(api: ApiClient, itemId: UUID, index: Int) {
+    lifecycleScope.launch {
+        val success = withContext(Dispatchers.IO) {
+            runCatching { api.subtitleApi.deleteSubtitle(itemId, index) }
+                .onFailure { Timber.e(it, "Failed to delete subtitle index=$index for $itemId") }
+                .isSuccess
+        }
+        val message = if (success) R.string.subtitle_deleted else R.string.subtitle_delete_failed
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun FullDetailsFragment.showLanguagePicker(anchor: View, api: ApiClient, itemId: UUID) =

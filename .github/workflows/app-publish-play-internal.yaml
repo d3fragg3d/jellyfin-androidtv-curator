@@ -28,6 +28,13 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
+      # GitHub Actions has no native way to depend on jobs in other workflow files
+      # (App / Test and App / Build run as separate workflows), so we re-run the same
+      # checks here as a gate. If this fails, the job stops and nothing gets signed
+      # or uploaded.
+      - name: Verify build (mirrors App / Test and App / Build)
+        run: ./gradlew test assembleDebug
+
       - name: Decode upload keystore
         run: echo "${{ secrets.PLAY_KEYSTORE_BASE64 }}" | base64 --decode > /tmp/upload-keystore.jks
 

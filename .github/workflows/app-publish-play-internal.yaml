@@ -1,0 +1,56 @@
+name: App / Publish to Play (Internal Testing)
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-internal:
+    name: Build and publish to Internal Testing
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+
+      - name: Decode upload keystore
+        run: echo "${{ secrets.PLAY_KEYSTORE_BASE64 }}" | base64 --decode > /tmp/upload-keystore.jks
+
+      - name: Compute version (monotonic per run, never resets)
+        run: |
+          # +1 offset so the first run starts above versionCode 199 (the manually
+          # bootstrapped 0.0.1 release already live on Internal Testing).
+          RUN=$(( ${{ github.run_number }} + 1 ))
+          echo "JELLYFIN_VERSION=0.$((RUN / 100)).$((RUN % 100))" >> "$GITHUB_ENV"
+
+      - name: Build signed app bundle
+        env:
+          KEYSTORE_FILE: /tmp/upload-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Upload to Play Store (Internal Testing)
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: tv.curator.app
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          track: internal
+          status: completed

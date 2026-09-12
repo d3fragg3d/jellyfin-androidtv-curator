@@ -585,7 +585,9 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         }
 
         String genreName = getArguments().getString(Extras.GenreName, null);
-        setRowDef(new BrowseRowDef("", BrowsingUtils.createBrowseGridItemsRequest(mFolder, genreName), CHUNK_SIZE_MINIMUM, false, true));
+        String includeTypeName = getArguments().getString(Extras.IncludeType, null);
+        BaseItemKind itemType = includeTypeName != null ? BaseItemKind.Companion.fromNameOrNull(includeTypeName) : null;
+        setRowDef(new BrowseRowDef("", BrowsingUtils.createBrowseGridItemsRequest(mFolder, genreName, itemType), CHUNK_SIZE_MINIMUM, false, true));
     }
 
     @Override

@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -29,6 +30,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.itemBackdropImages
 import org.koin.android.ext.android.inject
+import timber.log.Timber
 import java.util.UUID
 
 @Serializable
@@ -89,7 +91,7 @@ class CuratorGenrePreferencesFragment : VerticalGridSupportFragment() {
 
 	override fun onStop() {
 		super.onStop()
-		if (isDirty) savePreferences()
+		if (isDirty) runBlocking { savePreferences() }
 	}
 
 	private fun loadPreferences() {
@@ -228,12 +230,12 @@ class CuratorGenrePreferencesFragment : VerticalGridSupportFragment() {
 		}
 	}
 
-	private fun savePreferences() {
+	private suspend fun savePreferences() {
 		val preferred = pendingStates.filter { it.value == PreferenceState.PREFERRED }.keys.toList()
 		val avoided = pendingStates.filter { it.value == PreferenceState.AVOIDED }.keys.toList()
 		val userId = userRepository.currentUser.value?.id ?: return
 
-		lifecycleScope.launch(Dispatchers.IO) {
+		withContext(Dispatchers.IO) {
 			runCatching {
 				api.request(
 					method = HttpMethod.POST,
@@ -244,7 +246,7 @@ class CuratorGenrePreferencesFragment : VerticalGridSupportFragment() {
 						avoidedRuleIds = avoided,
 					),
 				)
-			}
+			}.onFailure { Timber.e(it, "Failed to save genre preferences") }
 		}
 	}
 }

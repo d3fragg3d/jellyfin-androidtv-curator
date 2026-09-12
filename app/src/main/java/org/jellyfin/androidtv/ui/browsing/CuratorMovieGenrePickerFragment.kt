@@ -60,14 +60,15 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 
 	private lateinit var folder: BaseItemDto
 	private var includeType: BaseItemKind = BaseItemKind.MOVIE
+	private var includeTypeArg: String = "Movie"
 	private lateinit var rowAdapter: ArrayObjectAdapter
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
 		folder = Json.decodeFromString<BaseItemDto>(requireArguments().getString(Extras.Folder)!!)
-		includeType = requireArguments().getString(Extras.IncludeType)
-			?.let(BaseItemKind::fromNameOrNull) ?: BaseItemKind.MOVIE
+		includeTypeArg = requireArguments().getString(Extras.IncludeType) ?: "Movie"
+		includeType = BaseItemKind.fromNameOrNull(includeTypeArg) ?: BaseItemKind.MOVIE
 		title = folder.name
 
 		val gridPresenter = VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_LARGE, false)
@@ -90,7 +91,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 						type = BaseItemKind.BOX_SET,
 						displayPreferencesId = item.collectionId.toString(),
 					)
-					navigationRepository.navigate(Destinations.libraryBrowser(boxSet))
+					navigationRepository.navigate(Destinations.libraryBrowser(boxSet, includeTypeArg))
 				}
 				item.genreNames.isNotEmpty() -> {
 					navigationRepository.navigate(
@@ -139,12 +140,12 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 				} else null
 			}
 
-			fun fetchBackdropByParentId(parentId: UUID) = async(Dispatchers.IO) {
+			fun fetchBackdropByParentId(parentId: UUID, typeFilter: BaseItemKind? = includeType) = async(Dispatchers.IO) {
 				runCatching {
 					val result by api.itemsApi.getItems(
 						userId = userId,
 						parentId = parentId,
-						includeItemTypes = setOf(includeType),
+						includeItemTypes = typeFilter?.let { setOf(it) },
 						recursive = true,
 						limit = 10,
 						sortBy = setOf(ItemSortBy.RANDOM),
@@ -180,7 +181,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 			val allMoviesImageDeferred = fetchBackdropByParentId(folder.id!!)
 			val collectionImageDeferreds = collections.mapIndexed { index, collection ->
 				when (collection.type) {
-					"custom" -> customIds[index]?.let { fetchBackdropByParentId(it) }
+					"custom" -> customIds[index]?.let { fetchBackdropByParentId(it, null) }
 					"native" -> fetchBackdropByGenres(collection.genres)
 					else -> null
 				}

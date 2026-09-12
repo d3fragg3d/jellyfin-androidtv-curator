@@ -72,6 +72,11 @@ class MainActivity : FragmentActivity() {
 
 		onBackPressedDispatcher.addCallback(this, backPressedCallback)
 		if (savedInstanceState == null && navigationRepository.canGoBack) navigationRepository.reset(clearHistory = true)
+		// If the process was killed and recreated, DestinationFragmentView restores its own
+		// fragment history from the saved state (so the last screen reappears correctly), but
+		// NavigationRepository's in-memory back stack does not — leaving Back with nothing to
+		// do but exit the app. Reset to Home in that case so Back always has somewhere to go.
+		if (savedInstanceState != null && !navigationRepository.canGoBack) navigationRepository.reset(clearHistory = true)
 
 		navigationRepository.currentAction
 			.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)

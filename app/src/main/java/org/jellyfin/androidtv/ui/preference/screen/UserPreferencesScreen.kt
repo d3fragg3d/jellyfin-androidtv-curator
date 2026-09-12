@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.preference.screen
 
+import android.content.Intent
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
@@ -8,6 +9,7 @@ import org.jellyfin.androidtv.ui.preference.dsl.OptionsFragment
 import org.jellyfin.androidtv.ui.preference.dsl.action
 import org.jellyfin.androidtv.ui.preference.dsl.link
 import org.jellyfin.androidtv.ui.preference.dsl.optionsScreen
+import org.jellyfin.androidtv.ui.startup.StartupActivity
 import org.koin.android.ext.android.inject
 
 class UserPreferencesScreen : OptionsFragment() {
@@ -18,10 +20,29 @@ class UserPreferencesScreen : OptionsFragment() {
 
 		category {
 			action {
+				setTitle(R.string.pref_change_users)
+				setContent(R.string.pref_change_users_description)
+				icon = R.drawable.ic_users
+				onActivate = {
+					val context = requireContext()
+					requireActivity().finish()
+					context.startActivity(
+						Intent(context, StartupActivity::class.java).apply {
+							addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+							putExtra(StartupActivity.EXTRA_HIDE_SPLASH, true)
+						}
+					)
+				}
+			}
+
+			action {
 				setTitle(R.string.pref_genre_preferences)
 				setContent(R.string.pref_genre_preferences_description)
 				icon = R.drawable.ic_star
-				onActivate = { navigationRepository.navigate(Destinations.genrePreferences) }
+				onActivate = {
+					requireActivity().finish()
+					navigationRepository.navigate(Destinations.genrePreferences)
+				}
 			}
 
 			link {

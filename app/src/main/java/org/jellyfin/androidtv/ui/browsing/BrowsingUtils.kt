@@ -290,7 +290,7 @@ object BrowsingUtils {
 
 	@JvmStatic
 	@JvmOverloads
-	fun createBrowseGridItemsRequest(parent: BaseItemDto, genre: String? = null): GetItemsRequest {
+	fun createBrowseGridItemsRequest(parent: BaseItemDto, genre: String? = null, itemType: BaseItemKind? = null): GetItemsRequest {
 		val baseRequest = GetItemsRequest(
 			fields = ItemRepository.itemFields,
 			parentId = parent.id,
@@ -319,6 +319,8 @@ object BrowsingUtils {
 			}
 		}
 
-		return baseRequest
+		// BoxSets are curated collections — don't restrict by itemType (e.g. Anime BoxSet has Series not Movies)
+		if (parent.type == BaseItemKind.BOX_SET) return baseRequest
+		return if (itemType != null) baseRequest.copy(includeItemTypes = setOf(itemType)) else baseRequest
 	}
 }

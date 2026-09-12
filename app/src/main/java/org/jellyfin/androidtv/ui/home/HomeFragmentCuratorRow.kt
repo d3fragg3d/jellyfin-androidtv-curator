@@ -20,7 +20,11 @@ class HomeFragmentCuratorRow(
 			val request = GetItemsRequest(
 				userId = userId,
 				parentId = collection.id,
-				includeItemTypes = setOf(BaseItemKind.MOVIE),
+				// BOX_SET included because some collections (e.g. "franchise box-sets mode"
+				// rules in the Curator plugin) have other BoxSets as children rather than
+				// movies directly — clicking one navigates to its own collection browser
+				// via ItemLauncher, same as any other BoxSet.
+				includeItemTypes = setOf(BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.BOX_SET),
 				fields = ItemRepository.browseFields,
 				imageTypeLimit = 1,
 			)

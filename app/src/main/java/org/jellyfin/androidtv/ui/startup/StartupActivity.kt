@@ -36,6 +36,8 @@ import org.jellyfin.androidtv.ui.itemhandling.ItemLauncher
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
+import org.jellyfin.androidtv.auth.model.Server
+import org.jellyfin.androidtv.ui.startup.fragment.CuratorUserPickerFragment
 import org.jellyfin.androidtv.ui.startup.fragment.SelectServerFragment
 import org.jellyfin.androidtv.ui.startup.fragment.ServerFragment
 import org.jellyfin.androidtv.ui.startup.fragment.SplashFragment
@@ -103,6 +105,14 @@ class StartupActivity : FragmentActivity() {
 		applyTheme()
 	}
 
+	private var proceeding = false
+
+	internal fun proceedToHome() {
+		if (proceeding) return
+		proceeding = true
+		lifecycleScope.launch { openNextActivity() }
+	}
+
 	private fun onPermissionsGranted() = sessionRepository.state
 		.flowWithLifecycle(lifecycle, Lifecycle.State.RESUMED)
 		.filter { it == SessionRepositoryState.READY }
@@ -110,15 +120,21 @@ class StartupActivity : FragmentActivity() {
 		.distinctUntilChanged()
 		.onEach { session ->
 			if (session != null) {
-				Timber.i("Found a session in the session repository, waiting for the currentUser in the application class.")
-
-				showSplash()
-
-				val currentUser = userRepository.currentUser.first { it != null }
-				Timber.i("CurrentUser changed to ${currentUser?.id} while waiting for startup.")
-
-				lifecycleScope.launch {
-					openNextActivity()
+				if (proceeding) return@onEach
+				val server = startupViewModel.getLastServer()
+				if (server != null) {
+					// Don't replace picker mid-auth — session changes during auth would cancel the auth
+					// flow's lifecycleScope and leave the user stuck requiring a second click.
+					if (supportFragmentManager.findFragmentById(R.id.content_view) !is CuratorUserPickerFragment) {
+						Timber.i("Found a session in the session repository, showing user picker.")
+						showUserPicker(server)
+					}
+				} else {
+					// No server configured — fall back to direct launch
+					showSplash()
+					val currentUser = userRepository.currentUser.first { it != null }
+					Timber.i("CurrentUser changed to ${currentUser?.id} while waiting for startup.")
+					lifecycleScope.launch { openNextActivity() }
 				}
 			} else {
 				// Clear audio queue in case left over from last run
@@ -187,6 +203,15 @@ class StartupActivity : FragmentActivity() {
 			replace<SplashFragment>(R.id.content_view)
 		}
 	}
+
+	private fun showUserPicker(server: Server) = supportFragmentManager.commit {
+		replace<CuratorUserPickerFragment>(
+			R.id.content_view, null,
+			bundleOf(CuratorUserPickerFragment.ARG_SERVER_ID to server.id.toString())
+		)
+	}
+
+	internal fun showServerManagement(serverId: UUID) = showServer(serverId)
 
 	private fun showServer(id: UUID) = supportFragmentManager.commit {
 		replace<StartupToolbarFragment>(R.id.content_view)

@@ -514,6 +514,12 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenreCardPresenter.kt` | None | New file — 260×146dp image card presenter for genre picker |
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenrePreferencePresenter.kt` | None | New file — 260×130dp card presenter with ▲/▼ state badges for preferences screen |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorGenrePreferencesFragment.kt` | None | New file — genre preferences screen (VerticalGrid, 4 cols, cycles NONE→PREFERRED→AVOIDED on press, saves on stop) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/card/UkAgeRating.kt` | None | New file — maps official ratings (GB-/US/TV) to BBFC U/PG/12/12A/15/18 badge + colour; `getCardYear()` for card subtext |
+| `app/src/main/java/org/jellyfin/androidtv/ui/card/AgeRatingBadgeDrawable.kt` | None | New file — badge background: rounded triangle (U/PG) or circle (12/12A/15/18) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/card/LegacyImageCardView.java` | Low | Added `setAgeRating()` + `updateAgeRatingPosition()` at end of class; `setProgress()`/`showFavIcon()` call the latter |
+| `app/src/main/java/org/jellyfin/androidtv/ui/presentation/CardPresenter.java` | Low | `onBindViewHolder` sets the age rating badge on movie/series poster cards (block after `showFavIcon`) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/BaseItemDtoBaseRowItem.kt` | Low | `getSubText()` returns year for MOVIE/SERIES instead of official rating |
+| `app/src/main/res/layout/view_card_legacy_image.xml` | Low | Added `ageRating` TextView badge before `resumeProgress` |
 | `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`; replaced user-visible "Jellyfin" brand strings with "Curator" |
 | `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
 | `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |

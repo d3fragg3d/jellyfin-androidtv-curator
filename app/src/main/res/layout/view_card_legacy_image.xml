@@ -51,6 +51,25 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+        <!-- Curator: BBFC-style age rating badge, positioned in LegacyImageCardView.updateAgeRatingPosition() -->
+        <TextView
+            android:id="@+id/ageRating"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_alignEnd="@id/main_image"
+            android:layout_alignBottom="@id/main_image"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="15"
+            tools:visibility="visible" />
+
         <ProgressBar
             android:id="@+id/resumeProgress"
             style="@style/overlay_progress"

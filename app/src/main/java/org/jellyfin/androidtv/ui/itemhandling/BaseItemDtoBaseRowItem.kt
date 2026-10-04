@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.ContextCompat
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.constant.ImageType
+import org.jellyfin.androidtv.ui.card.getCardYear
 import org.jellyfin.androidtv.util.ImageHelper
 import org.jellyfin.androidtv.util.TimeUtils
 import org.jellyfin.androidtv.util.apiclient.seriesPrimaryImage
@@ -97,6 +98,9 @@ open class BaseItemDtoBaseRowItem @JvmOverloads constructor(
 
 	override fun getSubText(context: Context) = when (baseItem?.type) {
 		BaseItemKind.TV_CHANNEL -> baseItem.number
+		// Curator: year replaces the age rating (shown as a poster badge instead)
+		BaseItemKind.MOVIE,
+		BaseItemKind.SERIES -> baseItem.getCardYear()
 		BaseItemKind.TV_PROGRAM,
 		BaseItemKind.PROGRAM -> baseItem.episodeTitle ?: baseItem.channelName
 

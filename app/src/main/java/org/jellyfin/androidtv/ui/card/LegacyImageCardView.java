@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -270,9 +271,46 @@ public class LegacyImageCardView extends BaseCardView {
         } else {
             binding.resumeProgress.setVisibility(GONE);
         }
+        updateAgeRatingPosition();
     }
 
     public void showFavIcon(boolean show) {
         binding.favIcon.setVisibility(show ? VISIBLE : GONE);
+        updateAgeRatingPosition();
+    }
+
+    // Curator: BBFC-style age rating badge on the poster
+    public void setAgeRating(@Nullable UkAgeRating rating) {
+        if (rating == null) {
+            binding.ageRating.setVisibility(GONE);
+            return;
+        }
+
+        binding.ageRating.setBackground(new AgeRatingBadgeDrawable(rating,
+                Utils.convertDpToPixel(getContext(), 1), Utils.convertDpToPixel(getContext(), 3)));
+        binding.ageRating.setTextColor(rating.getTextColor());
+        if (rating.isTriangle()) {
+            // Sit the text in the wide lower part of the triangle
+            binding.ageRating.setGravity(android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.BOTTOM);
+            binding.ageRating.setPadding(0, 0, 0, Utils.convertDpToPixel(getContext(), 2));
+            binding.ageRating.setTextSize(rating.getLabel().length() > 1 ? 7 : 8);
+        } else {
+            binding.ageRating.setGravity(android.view.Gravity.CENTER);
+            binding.ageRating.setPadding(0, 0, 0, 0);
+            binding.ageRating.setTextSize(rating.getLabel().length() > 2 ? 7 : 9);
+        }
+        binding.ageRating.setText(rating.getLabel());
+        binding.ageRating.setVisibility(VISIBLE);
+        updateAgeRatingPosition();
+    }
+
+    // Keep the badge clear of the favourite heart and the resume progress bar
+    private void updateAgeRatingPosition() {
+        RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) binding.ageRating.getLayoutParams();
+        int endDp = binding.favIcon.getVisibility() == VISIBLE ? 29 : 4;
+        int bottomDp = binding.resumeProgress.getVisibility() == VISIBLE ? 14 : 4;
+        lp.setMarginEnd(Utils.convertDpToPixel(getContext(), endDp));
+        lp.bottomMargin = Utils.convertDpToPixel(getContext(), bottomDp);
+        binding.ageRating.setLayoutParams(lp);
     }
 }

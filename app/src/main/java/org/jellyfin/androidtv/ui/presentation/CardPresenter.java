@@ -19,6 +19,7 @@ import org.jellyfin.androidtv.preference.UserPreferences;
 import org.jellyfin.androidtv.preference.constant.RatingType;
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior;
 import org.jellyfin.androidtv.ui.card.LegacyImageCardView;
+import org.jellyfin.androidtv.ui.card.UkAgeRating;
 import org.jellyfin.androidtv.ui.itemhandling.AudioQueueBaseRowItem;
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem;
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem;
@@ -350,6 +351,11 @@ public class CardPresenter extends Presenter {
             holder.mCardView.setOverlayInfo(rowItem);
         }
         holder.mCardView.showFavIcon(rowItem.isFavorite());
+        // Curator: age rating badge on movie/series posters
+        BaseItemDto ratedItem = rowItem.getBaseItem();
+        boolean showAgeRating = ImageType.POSTER.equals(mImageType) && ratedItem != null
+                && (ratedItem.getType() == BaseItemKind.MOVIE || ratedItem.getType() == BaseItemKind.SERIES);
+        holder.mCardView.setAgeRating(showAgeRating ? UkAgeRating.fromOfficialRating(ratedItem.getOfficialRating()) : null);
         if (rowItem instanceof AudioQueueBaseRowItem && ((AudioQueueBaseRowItem) rowItem).getPlaying()) {
             holder.mCardView.setPlayingIndicator(true);
         } else {

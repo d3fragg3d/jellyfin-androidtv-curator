@@ -535,6 +535,7 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`, `pref_theme_curator`; `pref_theme_dark` no longer says "(Default)"; replaced user-visible "Jellyfin" brand strings with "Curator" |
 | `app/src/main/res/values/theme_curator.xml` | None | New file — `Theme.Jellyfin.Curator` (purple glow background, pill buttons, purple-tinted surfaces) |
 | `app/src/main/res/drawable-nodpi/curator_background.png` | None | New file — 192×108 radial glow used as the app background (scaled up at runtime) |
+| `gradle/libs.versions.toml` | Low | `android-minSdk` 21 → 24 — Google Play automatic protection rejects bundles below 24 |
 | `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
 | `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |
 | `app/src/main/AndroidManifest.xml` | Low | `StartupActivity` uses `Theme.Jellyfin.Splash` |

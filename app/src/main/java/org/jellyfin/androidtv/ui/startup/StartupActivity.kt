@@ -37,6 +37,8 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.auth.model.Server
+import org.jellyfin.androidtv.ui.startup.fragment.CuratorServerManagementFragment
+import org.jellyfin.androidtv.ui.startup.fragment.CuratorUserLoginFragment
 import org.jellyfin.androidtv.ui.startup.fragment.CuratorUserPickerFragment
 import org.jellyfin.androidtv.ui.startup.fragment.SelectServerFragment
 import org.jellyfin.androidtv.ui.startup.fragment.ServerFragment
@@ -123,9 +125,11 @@ class StartupActivity : FragmentActivity() {
 				if (proceeding) return@onEach
 				val server = startupViewModel.getLastServer()
 				if (server != null) {
-					// Don't replace picker mid-auth — session changes during auth would cancel the auth
+					// Don't replace picker or sign-in mid-auth — session changes during auth would cancel the auth
 					// flow's lifecycleScope and leave the user stuck requiring a second click.
-					if (supportFragmentManager.findFragmentById(R.id.content_view) !is CuratorUserPickerFragment) {
+					// CuratorUserLoginFragment proceeds to Home itself once signed in.
+					val current = supportFragmentManager.findFragmentById(R.id.content_view)
+					if (current !is CuratorUserPickerFragment && current !is CuratorUserLoginFragment) {
 						Timber.i("Found a session in the session repository, showing user picker.")
 						showUserPicker(server)
 					}
@@ -204,14 +208,19 @@ class StartupActivity : FragmentActivity() {
 		}
 	}
 
-	private fun showUserPicker(server: Server) = supportFragmentManager.commit {
+	internal fun showUserPicker(server: Server) = supportFragmentManager.commit {
 		replace<CuratorUserPickerFragment>(
 			R.id.content_view, null,
 			bundleOf(CuratorUserPickerFragment.ARG_SERVER_ID to server.id.toString())
 		)
 	}
 
-	internal fun showServerManagement(serverId: UUID) = showServer(serverId)
+	internal fun showServerManagement(serverId: UUID) = supportFragmentManager.commit {
+		replace<CuratorServerManagementFragment>(
+			R.id.content_view, null,
+			bundleOf(CuratorServerManagementFragment.ARG_SERVER_ID to serverId.toString())
+		)
+	}
 
 	private fun showServer(id: UUID) = supportFragmentManager.commit {
 		replace<StartupToolbarFragment>(R.id.content_view)

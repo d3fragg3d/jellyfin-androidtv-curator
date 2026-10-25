@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Curator user avatar (admin) — generated; the gradient background is drawn in Compose -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="100dp"
+	android:height="100dp"
+	android:viewportWidth="100"
+	android:viewportHeight="100">
+	<path
+		android:fillColor="#1F1B2E"
+		android:pathData="M12,100C12,82 28,74 50,74C72,74 88,82 88,100Z" />
+	<path
+		android:fillColor="#E2AC86"
+		android:pathData="M43,60L57,60L57,76C54,80 46,80 43,76Z" />
+	<path
+		android:fillColor="#00A4DC"
+		android:pathData="M41,75L50,84L59,75C56,78 44,78 41,75Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M29,49a4,4 0 1,0 8,0a4,4 0 1,0 -8,0Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M63,49a4,4 0 1,0 8,0a4,4 0 1,0 -8,0Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M33,46a17,20 0 1,0 34,0a17,20 0 1,0 -34,0Z" />
+	<path
+		android:fillColor="#3B2A22"
+		android:pathData="M33,44C31,28 41,22 52,23C63,24 69,32 67,44C64,37 59,34 52,34C45,34 38,37 33,44Z" />
+	<path
+		android:fillColor="#3B2A22"
+		android:pathData="M44,25C48,19 58,19 62,24C57,23 50,24 44,25Z" />
+	<path
+		android:fillColor="#3B2A22"
+		android:pathData="M33,46C33,64 41,69 50,69C59,69 67,64 67,46C65,53 61,56 57,56L43,56C39,56 35,53 33,46Z" />
+	<path
+		android:fillColor="#2C1F19"
+		android:pathData="M43,55.5C46,53.5 54,53.5 57,55.5C54,57 46,57 43,55.5Z" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M41.5,47a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M54.5,47a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z" />
+	<path
+		android:strokeColor="#2A2238"
+		android:strokeWidth="1.8"
+		android:strokeLineCap="round"
+		android:pathData="M45,57Q50,61 55,57" />
+	<path
+		android:strokeColor="#E89A8A"
+		android:strokeWidth="1.8"
+		android:strokeLineCap="round"
+		android:pathData="M45.5,59.5Q50,62.5 54.5,59.5" />
+	<path
+		android:strokeColor="#2A2238"
+		android:strokeWidth="3.4"
+		android:strokeLineCap="round"
+		android:pathData="M30,47C30,19 70,19 70,47" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M26,44Q26,41 29,41L33,41Q35,41 35,44L35,55Q35,58 33,58L29,58Q26,58 26,55Z" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M65,44Q65,41 67,41L71,41Q74,41 74,44L74,55Q74,58 71,58L67,58Q65,58 65,55Z" />
+	<path
+		android:fillColor="#00A4DC"
+		android:pathData="M28,45L32,45L32,54L28,54Z" />
+	<path
+		android:fillColor="#AA5CC3"
+		android:pathData="M68,45L72,45L72,54L68,54Z" />
+</vector>

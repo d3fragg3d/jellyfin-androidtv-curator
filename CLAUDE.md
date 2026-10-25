@@ -61,7 +61,7 @@ echo "no" | JAVA_HOME=/opt/android-studio/jbr \
 
 ### Starting the emulator
 
-The machine runs Hyprland (Wayland). The emulator must be launched from a terminal with display access — it cannot be started from within a Claude Code shell session. Hardware Vulkan is not available to the emulator, so use SwiftShader:
+The machine runs Hyprland (Wayland). The command below works from a Claude Code shell too (run it in the background) — it opens the emulator window on the desktop via XWayland. Hardware Vulkan is not available to the emulator, so use SwiftShader:
 
 ```bash
 DISPLAY=:1 QT_QPA_PLATFORM=xcb \
@@ -506,21 +506,35 @@ These are the files that differ from upstream. New files we add are never a conf
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/BrowseGridFragment.java` | Low | Reads optional `GenreName` arg in `setupQueries()` and passes it to `BrowsingUtils` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemLauncher.java` | Low | `MOVIES` → `movieGenrePicker`, `TVSHOWS` → `tvShowGenrePicker`; removed LibraryPreferences dependency |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/ItemRowAdapter.java` | Low | `loadMoreItemsIfNeeded()` skips pagination during scroll |
-| `app/src/main/java/org/jellyfin/androidtv/ui/startup/StartupActivity.kt` | Low | Added 3s minimum splash duration before navigating to MainActivity |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/StartupActivity.kt` | Low | Added 3s minimum splash duration before navigating to MainActivity; `showUserPicker()` / `showServerManagement()` route to the Curator picker and Manage server fragments; session observer doesn't replace `CuratorUserLoginFragment` |
+| `app/src/main/java/org/jellyfin/androidtv/ui/shared/toolbar/MainToolbar.kt` | Low | User button no longer calls `destroyCurrentSession()` — keeps the session so StartupActivity shows the "Who's watching?" picker; shows the user's `CuratorAvatar` (new `userName` param on the private `MainToolbar`) |
 | `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/SplashFragment.kt` | Low | Background changed to Color.Black (was not_quite_black); removed colorResource dependency |
 | `app/src/main/java/org/jellyfin/androidtv/ui/shared/toolbar/Toolbar.kt` | Low | Logo() uses curator_symbol.png (symbol only) at 64dp height instead of full logo |
-| `app/src/main/java/org/jellyfin/androidtv/preference/UserPreferences.kt` | Low | `backdropEnabled` default changed to false |
+| `app/src/main/java/org/jellyfin/androidtv/preference/UserPreferences.kt` | Low | `backdropEnabled` default changed to false; `appTheme` default changed to `AppTheme.CURATOR` |
+| `app/src/main/java/org/jellyfin/androidtv/preference/constant/AppTheme.kt` | Low | Added `CURATOR` entry at the end of the enum |
+| `app/src/main/java/org/jellyfin/androidtv/util/ActivityThemeExtensions.kt` | Low | `AppTheme.CURATOR -> R.style.Theme_Jellyfin_Curator` mapping |
+| `app/src/main/java/org/jellyfin/androidtv/ui/base/colorScheme.kt` | Low | Compose button/input/popover colours changed to the Curator look (white-on-focus, translucent idle) — applies to all themes |
 | `app/src/main/java/org/jellyfin/androidtv/data/repository/UserViewsRepository.kt` | Low | Added `CollectionType.BOXSETS` to unsupportedCollectionTypes — hides Collections tile from home |
+| `app/src/main/java/org/jellyfin/androidtv/ui/presentation/UserViewCardPresenter.kt` | Low | "My media" tiles: for the Kids user, `CuratorKidsLibraryImage` replaces the server's library image (one delimited if/else block + `boundItemId`) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/presentation/CuratorKidsLibraryImage.kt` | None | New file — builds a kid-safe Movies/TV Shows tile (random backdrop from Kids' rating-filtered library + centred title), cached per session |
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenreCardPresenter.kt` | None | New file — 260×146dp image card presenter for genre picker |
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/GenrePreferencePresenter.kt` | None | New file — 260×130dp card presenter with ▲/▼ state badges for preferences screen |
 | `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorGenrePreferencesFragment.kt` | None | New file — genre preferences screen (VerticalGrid, 4 cols, cycles NONE→PREFERRED→AVOIDED on press, saves on stop) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/browsing/CuratorUsers.kt` | None | New file — `isKidsUser()` (case-insensitive, matches the plugin's `kidsUsername`) |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/CuratorServerManagementFragment.kt` | None | New file — "Manage server" screen (server card, sign in with password, change server, settings, help, back to picker); replaces upstream ServerFragment for this route |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/CuratorUserLoginFragment.kt` | None | New file — Compose sign-in screen (Quick Connect + password side by side); replaces upstream UserLoginFragment on Curator routes and goes straight to Home on success |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/CuratorStartupStyle.kt` | None | New file — shared background, title and pill button for the Curator startup screens |
+| `app/src/main/java/org/jellyfin/androidtv/ui/startup/fragment/CuratorUserProfiles.kt` | None | New file — username → friendly name, avatar, gradient, sort order for "Who's watching?" |
+| `app/src/main/res/drawable/avatar_*.xml` | None | New files — custom user avatars, generated by `design/curator-avatars.py` |
 | `app/src/main/java/org/jellyfin/androidtv/ui/card/UkAgeRating.kt` | None | New file — maps official ratings (GB-/US/TV) to BBFC U/PG/12/12A/15/18 badge + colour; `getCardYear()` for card subtext |
 | `app/src/main/java/org/jellyfin/androidtv/ui/card/AgeRatingBadgeDrawable.kt` | None | New file — badge background: rounded triangle (U/PG) or circle (12/12A/15/18) |
 | `app/src/main/java/org/jellyfin/androidtv/ui/card/LegacyImageCardView.java` | Low | Added `setAgeRating()` + `updateAgeRatingPosition()` at end of class; `setProgress()`/`showFavIcon()` call the latter |
 | `app/src/main/java/org/jellyfin/androidtv/ui/presentation/CardPresenter.java` | Low | `onBindViewHolder` sets the age rating badge on movie/series poster cards (block after `showFavIcon`) |
 | `app/src/main/java/org/jellyfin/androidtv/ui/itemhandling/BaseItemDtoBaseRowItem.kt` | Low | `getSubText()` returns year for MOVIE/SERIES instead of official rating |
 | `app/src/main/res/layout/view_card_legacy_image.xml` | Low | Added `ageRating` TextView badge before `resumeProgress` |
-| `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`; replaced user-visible "Jellyfin" brand strings with "Curator" |
+| `app/src/main/res/values/strings.xml` | Low | Added `lbl_all_movies`, `pref_theme_curator`; `pref_theme_dark` no longer says "(Default)"; replaced user-visible "Jellyfin" brand strings with "Curator" |
+| `app/src/main/res/values/theme_curator.xml` | None | New file — `Theme.Jellyfin.Curator` (purple glow background, pill buttons, purple-tinted surfaces) |
+| `app/src/main/res/drawable-nodpi/curator_background.png` | None | New file — 192×108 radial glow used as the app background (scaled up at runtime) |
 | `app/build.gradle.kts` | Low | `applicationId = "tv.curator.app"`; release resValues use curator package |
 | `app/src/main/res/values/theme_jellyfin.xml` | Low | Added `Theme.Jellyfin.Splash` for black window background on startup |
 | `app/src/main/AndroidManifest.xml` | Low | `StartupActivity` uses `Theme.Jellyfin.Splash` |

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Curator look: matches the "Who's watching?", Manage server and sign-in screens -->
+    <color name="curator_surface">#1C1729</color>
+    <color name="curator_button">#33FFFFFF</color>
+    <color name="curator_input_stroke">#3A3648</color>
+    <color name="curator_tile">#231C35</color>
+
+    <style name="Theme.Jellyfin.Curator" parent="Theme.Jellyfin">
+        <!-- Black with a faint purple glow, same as the startup screens -->
+        <item name="defaultBackground">@drawable/curator_background</item>
+
+        <!-- Buttons: translucent pill, white when focused -->
+        <item name="android:colorButtonNormal">@color/curator_button</item>
+        <item name="buttonDefaultNormalBackground">@color/curator_button</item>
+        <item name="buttonDefaultHighlightBackground">@color/white</item>
+
+        <item name="inputDefaultStrokeColor">@color/curator_input_stroke</item>
+        <item name="popupMenuBackground">@color/curator_surface</item>
+        <item name="cardImageBackground">@color/curator_tile</item>
+
+        <!-- Rounding Values -->
+        <item name="cardRounding">6dp</item>
+        <item name="buttonRounding">24dp</item>
+        <item name="inputRounding">12dp</item>
+        <item name="popupMenuRounding">12dp</item>
+
+        <!-- Tile colors -->
+        <item name="tile_port_person_bg">@color/curator_tile</item>
+        <item name="tile_port_video_bg">@color/curator_tile</item>
+        <item name="tile_land_folder_bg">@color/curator_tile</item>
+        <item name="tile_chapter_bg">@color/curator_tile</item>
+        <item name="tile_land_tv_bg">@color/curator_tile</item>
+        <item name="tile_port_tv_bg">@color/curator_tile</item>
+        <item name="tile_actors_bg">@color/curator_tile</item>
+        <item name="tile_land_photo_bg">@color/curator_tile</item>
+        <item name="tile_port_folder_bg">@color/curator_tile</item>
+        <item name="tile_land_series_timer_bg">@color/curator_tile</item>
+    </style>
+</resources>

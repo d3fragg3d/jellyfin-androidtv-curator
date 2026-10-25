@@ -114,7 +114,7 @@ class CuratorMovieGenrePickerFragment : VerticalGridSupportFragment() {
 			progressBarManager.show()
 
 			val mediaType = if (includeType == BaseItemKind.SERIES) "TvShow" else "Movie"
-			val isKidsUser = userRepository.currentUser.value?.name == "Kids"
+			val isKidsUser = isKidsUser(userRepository.currentUser.value?.name)
 			val userId = userRepository.currentUser.value?.id
 
 			val collections = withContext(Dispatchers.IO) {

@@ -39,6 +39,8 @@ import org.jellyfin.androidtv.ui.navigation.ActivityDestinations
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
+import org.jellyfin.androidtv.ui.startup.fragment.CuratorAvatar
+import org.jellyfin.androidtv.ui.startup.fragment.curatorUserProfile
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.primaryImage
 import org.jellyfin.sdk.api.client.ApiClient
@@ -65,6 +67,7 @@ fun MainToolbar(
 
 	MainToolbar(
 		userImage = userImage,
+		userName = currentUser?.name,
 		activeButton = activeButton,
 	)
 }
@@ -72,6 +75,7 @@ fun MainToolbar(
 @Composable
 private fun MainToolbar(
 	userImage: String? = null,
+	userName: String? = null,
 	activeButton: MainToolbarActiveButton,
 ) {
 	val focusRequester = remember { FocusRequester() }
@@ -93,12 +97,15 @@ private fun MainToolbar(
 				val userImagePainter = rememberAsyncImagePainter(userImage)
 				val userImageState by userImagePainter.state.collectAsState()
 				val userImageVisible = userImageState is AsyncImagePainter.State.Success
+				// Curator: family profiles show their Curator avatar instead of the Jellyfin image
+				val curatorProfile = remember(userName) { userName?.let(::curatorUserProfile)?.takeIf { it.avatar != null } }
 
 				IconButton(
 					onClick = {
 						if (activeButton != MainToolbarActiveButton.User) {
 							mediaManager.clearAudioQueue()
-							sessionRepository.destroyCurrentSession()
+							// Curator: keep the session so StartupActivity shows the "Who's watching?" picker
+							// (it needs an authenticated client) instead of the server/sign-in screen
 
 							// Open login activity
 							activity?.startActivity(ActivityDestinations.startup(activity))
@@ -106,9 +113,16 @@ private fun MainToolbar(
 						}
 					},
 					colors = if (activeButton == MainToolbarActiveButton.User) activeButtonColors else ButtonDefaults.colors(),
-					contentPadding = if (userImageVisible) PaddingValues(3.dp) else IconButtonDefaults.ContentPadding,
+					contentPadding = if (userImageVisible || curatorProfile != null) PaddingValues(3.dp) else IconButtonDefaults.ContentPadding,
 				) {
-					if (!userImageVisible) {
+					if (curatorProfile != null) {
+						CuratorAvatar(
+							profile = curatorProfile,
+							imageUrl = null,
+							modifier = Modifier.aspectRatio(1f),
+							initialFontSize = 14,
+						)
+					} else if (!userImageVisible) {
 						Icon(
 							imageVector = ImageVector.vectorResource(R.drawable.ic_user),
 							contentDescription = stringResource(R.string.lbl_switch_user),

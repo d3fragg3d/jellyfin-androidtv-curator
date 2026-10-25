@@ -7,21 +7,22 @@ import androidx.compose.ui.graphics.Color
 fun colorScheme(): ColorScheme = ColorScheme(
 	background = Color(0xFF101010),
 	onBackground = Color(0xFFFFFFFF),
-	button = Color(0xB3747474),
+	// Curator: translucent buttons that turn white on focus, purple-tinted surfaces (see theme_curator.xml)
+	button = Color(0x33FFFFFF),
 	onButton = Color(0xFFDDDDDD),
-	buttonFocused = Color(0xE6CCCCCC),
-	onButtonFocused = Color(0xFF444444),
-	buttonDisabled = Color(0x33747474),
+	buttonFocused = Color(0xFFFFFFFF),
+	onButtonFocused = Color(0xFF000000),
+	buttonDisabled = Color(0x1AFFFFFF),
 	onButtonDisabled = Color(0xFF686868),
-	buttonActive = Color(0x4DCCCCCC),
-	onButtonActive = Color(0xFFDDDDDD),
-	input = Color(0xB3747474),
+	buttonActive = Color(0x4DFFFFFF),
+	onButtonActive = Color(0xFFFFFFFF),
+	input = Color(0xFF3A3648),
 	onInput = Color(0xE6CCCCCC),
-	inputFocused = Color(0xE6CCCCCC),
-	onInputFocused = Color(0xFFDDDDDD),
+	inputFocused = Color(0xFFFFFFFF),
+	onInputFocused = Color(0xFFFFFFFF),
 	recording = Color(0xB3FF7474),
 	onRecording = Color(0xFFDDDDDD),
-	popover = Color(0xFF212225),
+	popover = Color(0xFF1C1729),
 )
 
 @Immutable

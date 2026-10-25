@@ -13,12 +13,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import java.util.UUID
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -78,7 +82,6 @@ import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
-import kotlin.math.absoluteValue
 
 @Serializable
 private data class CuratorUserInfo(
@@ -135,13 +138,14 @@ class CuratorUserPickerFragment : Fragment() {
 							}
 					}.getOrDefault(emptyList())
 				}
-				allUsers = fetched.sortedBy { it.name }
+				allUsers = fetched.sortedWith(compareBy({ curatorUserProfile(it.name).order }, { it.name.lowercase() }))
 			}
 		}
 
 		JellyfinTheme {
 			UserPickerScreen(
 				users = allUsers,
+				currentUserId = sessionRepository.currentSession.value?.userId,
 				getImageUrl = { user ->
 					api.imageApi.getUserImageUrl(userId = user.id, tag = null)
 				},
@@ -166,10 +170,10 @@ class CuratorUserPickerFragment : Fragment() {
 					AuthenticatingState -> Unit
 					AuthenticatedState -> (requireActivity() as StartupActivity).proceedToHome()
 					RequireSignInState -> requireActivity().supportFragmentManager.commit {
-						replace<UserLoginFragment>(
+						replace<CuratorUserLoginFragment>(
 							R.id.content_view, null, bundleOf(
-								UserLoginFragment.ARG_SERVER_ID to server.id.toString(),
-								UserLoginFragment.ARG_USERNAME to user.name,
+								CuratorUserLoginFragment.ARG_SERVER_ID to server.id.toString(),
+								CuratorUserLoginFragment.ARG_USERNAME to user.name,
 							)
 						)
 						addToBackStack(null)
@@ -186,72 +190,61 @@ class CuratorUserPickerFragment : Fragment() {
 	}
 }
 
+
 @Composable
 private fun UserPickerScreen(
 	users: List<User>,
+	currentUserId: UUID?,
 	getImageUrl: (User) -> String?,
 	onUserClick: (User) -> Unit,
 	onManageClick: () -> Unit,
 ) {
-	val firstCardFocusRequester = remember { FocusRequester() }
+	val initialFocusRequester = remember { FocusRequester() }
+	val initialFocusIndex = users.indexOfFirst { it.id == currentUserId }.coerceAtLeast(0)
 
 	// Request focus after composition, not during layout (LaunchedEffect is safe; onPlaced is not).
 	// delay(50) gives Compose one frame to lay out the cards before requestFocus() runs.
 	LaunchedEffect(users) {
 		if (users.isNotEmpty()) {
 			delay(50)
-			runCatching { firstCardFocusRequester.requestFocus() }
+			runCatching { initialFocusRequester.requestFocus() }
 		}
 	}
 
-	Box(
-		modifier = Modifier
-			.fillMaxSize()
-			.background(Color.Black),
-		contentAlignment = Alignment.Center,
-	) {
-		Column(horizontalAlignment = Alignment.CenterHorizontally) {
-			Image(
-				painter = painterResource(R.drawable.app_logo),
-				contentDescription = null,
-				modifier = Modifier.width(200.dp),
-			)
+	CuratorStartupBackground {
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.Center,
+			modifier = Modifier.fillMaxSize(),
+		) {
+			CuratorScreenTitle("Who's watching?")
 
-			Spacer(Modifier.height(20.dp))
-
-			Text(
-				text = "Who's watching?",
-				color = Color(0xFFCCCCCC),
-				fontSize = 26.sp,
-				fontWeight = FontWeight.Light,
-			)
-
-			Spacer(Modifier.height(40.dp))
+			Spacer(Modifier.height(48.dp))
 
 			if (users.isEmpty()) {
-				CircularProgressIndicator(
-					color = Color.White,
-					modifier = Modifier.size(48.dp),
-				)
-			} else {
-				Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
-					// "Manage server" card — always first in the row
-					ManageServerCard(
-						onClick = onManageClick,
-						modifier = Modifier.width(110.dp),
+				Box(Modifier.height(170.dp), contentAlignment = Alignment.Center) {
+					CircularProgressIndicator(
+						color = Color.White,
+						modifier = Modifier.size(48.dp),
 					)
+				}
+			} else {
+				Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
 					users.forEachIndexed { index, user ->
+						val profile = curatorUserProfile(user.name)
 						UserPickerCard(
-							name = user.name,
-							imageUrl = getImageUrl(user),
+							profile = profile,
+							imageUrl = if (profile.avatar == null) getImageUrl(user) else null,
 							onClick = { onUserClick(user) },
-							modifier = Modifier
-								.width(110.dp)
-								.then(if (index == 0) Modifier.focusRequester(firstCardFocusRequester) else Modifier),
+							modifier = if (index == initialFocusIndex) Modifier.focusRequester(initialFocusRequester) else Modifier,
 						)
 					}
 				}
 			}
+
+			Spacer(Modifier.height(56.dp))
+
+			CuratorPillButton(text = "Manage server", icon = R.drawable.ic_settings, onClick = onManageClick)
 		}
 	}
 }
@@ -259,20 +252,21 @@ private fun UserPickerScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserPickerCard(
-	name: String,
+	profile: CuratorUserProfile,
 	imageUrl: String?,
 	onClick: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	val interactionSource = remember { MutableInteractionSource() }
 	val focused by interactionSource.collectIsFocusedAsState()
-	val scale by animateFloatAsState(if (focused) 1.1f else 1f, label = "scale")
-	val borderColor = if (focused) Color(0xFF00A4DC) else Color(0xFF444444)
+	val scale by animateFloatAsState(if (focused) 1.12f else 1f, label = "scale")
+	val dim by animateFloatAsState(if (focused) 1f else 0.7f, label = "dim")
+	val glow by animateFloatAsState(if (focused) 1f else 0f, label = "glow")
 
 	Column(
 		horizontalAlignment = Alignment.CenterHorizontally,
 		modifier = modifier
-			.scale(scale)
+			.width(112.dp)
 			.combinedClickable(
 				interactionSource = interactionSource,
 				indication = null,
@@ -280,106 +274,40 @@ private fun UserPickerCard(
 			)
 	) {
 		Box(
-			modifier = Modifier
-				.aspectRatio(1f)
-				.clip(CircleShape)
-				.border(3.dp, borderColor, CircleShape)
-		) {
-			// Initials always rendered as background — shows through if image fails to load
-			UserInitialsAvatar(name)
-			if (imageUrl != null) {
-				AsyncImage(
-					modifier = Modifier.fillMaxSize(),
-					scaleType = ImageView.ScaleType.CENTER_CROP,
-					url = imageUrl,
-				)
-			}
-		}
-
-		Spacer(Modifier.height(8.dp))
-
-		Text(
-			text = name,
-			color = if (focused) Color.White else Color(0xFFAAAAAA),
-			fontSize = 16.sp,
-			maxLines = 1,
-		)
-	}
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun ManageServerCard(
-	onClick: () -> Unit,
-	modifier: Modifier = Modifier,
-) {
-	val interactionSource = remember { MutableInteractionSource() }
-	val focused by interactionSource.collectIsFocusedAsState()
-	val scale by animateFloatAsState(if (focused) 1.1f else 1f, label = "scale")
-	val borderColor = if (focused) Color(0xFF00A4DC) else Color(0xFF444444)
-
-	Column(
-		horizontalAlignment = Alignment.CenterHorizontally,
-		modifier = modifier
-			.scale(scale)
-			.combinedClickable(
-				interactionSource = interactionSource,
-				indication = null,
-				onClick = onClick,
-			)
-	) {
-		Box(
-			modifier = Modifier
-				.aspectRatio(1f)
-				.clip(CircleShape)
-				.border(3.dp, borderColor, CircleShape)
-				.background(Color(0xFF222222)),
 			contentAlignment = Alignment.Center,
+			modifier = Modifier
+				.size(112.dp)
+				.scale(scale)
+				.drawBehind {
+					// Soft halo in the profile's own colour behind the focused avatar
+					drawCircle(
+						brush = Brush.radialGradient(
+							colors = listOf(profile.gradient.last().copy(alpha = 0.55f * glow), Color.Transparent),
+							radius = size.minDimension * 0.75f,
+						),
+						radius = size.minDimension * 0.75f,
+					)
+				},
 		) {
-			Image(
-				painter = painterResource(R.drawable.ic_users),
-				contentDescription = null,
-				modifier = Modifier.size(40.dp),
+			CuratorAvatar(
+				profile = profile,
+				imageUrl = imageUrl,
+				modifier = Modifier
+					.fillMaxSize()
+					.border(3.dp, Color.White.copy(alpha = glow), CircleShape)
+					.padding(6.dp)
+					.alpha(dim),
 			)
 		}
 
-		Spacer(Modifier.height(8.dp))
+		Spacer(Modifier.height(18.dp))
 
 		Text(
-			text = "Manage server",
-			color = if (focused) Color.White else Color(0xFFAAAAAA),
-			fontSize = 14.sp,
+			text = profile.displayName,
+			color = if (focused) Color.White else CuratorMutedText,
+			fontSize = 18.sp,
+			fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
 			maxLines = 1,
 		)
 	}
 }
-
-private val avatarColors = listOf(
-	Color(0xFF1565C0),
-	Color(0xFF2E7D32),
-	Color(0xFF6A1B9A),
-	Color(0xFFC62828),
-	Color(0xFFE65100),
-	Color(0xFF00838F),
-)
-
-@Composable
-private fun UserInitialsAvatar(name: String) {
-	val initial = name.firstOrNull()?.uppercase() ?: "?"
-	val color = avatarColors[name.hashCode().absoluteValue % avatarColors.size]
-
-	Box(
-		modifier = Modifier
-			.fillMaxSize()
-			.background(color),
-		contentAlignment = Alignment.Center,
-	) {
-		Text(
-			text = initial,
-			color = Color.White,
-			fontSize = 52.sp,
-			fontWeight = FontWeight.Bold,
-		)
-	}
-}
-

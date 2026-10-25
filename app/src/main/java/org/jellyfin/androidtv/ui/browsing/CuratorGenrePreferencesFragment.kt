@@ -99,7 +99,7 @@ class CuratorGenrePreferencesFragment : VerticalGridSupportFragment() {
 			progressBarManager.show()
 
 			val userId = userRepository.currentUser.value?.id
-			val isKidsUser = userRepository.currentUser.value?.name == "Kids"
+			val isKidsUser = isKidsUser(userRepository.currentUser.value?.name)
 
 			// Fetch genre collections and current preferences in parallel
 			val collectionsDeferred = async(Dispatchers.IO) {

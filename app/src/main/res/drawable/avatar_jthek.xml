@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Curator user avatar (jthek) — generated; the gradient background is drawn in Compose -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="100dp"
+	android:height="100dp"
+	android:viewportWidth="100"
+	android:viewportHeight="100">
+	<path
+		android:fillColor="#7209B7"
+		android:pathData="M12,100C12,82 28,74 50,74C72,74 88,82 88,100Z" />
+	<path
+		android:fillColor="#E2AC86"
+		android:pathData="M43,60L57,60L57,76C54,80 46,80 43,76Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M41,75L50,84L59,75C56,78 44,78 41,75Z" />
+	<path
+		android:fillColor="#9C3D1C"
+		android:pathData="M29,52C26,30 38,22 50,22C62,22 74,30 71,52L72,66C66,69 61,67 60,64L60,40L40,40L40,64C39,67 34,69 28,66Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M29,49a4,4 0 1,0 8,0a4,4 0 1,0 -8,0Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M63,49a4,4 0 1,0 8,0a4,4 0 1,0 -8,0Z" />
+	<path
+		android:fillColor="#F4C9A6"
+		android:pathData="M33,46a17,20 0 1,0 34,0a17,20 0 1,0 -34,0Z" />
+	<path
+		android:fillColor="#B8512A"
+		android:pathData="M33,46C32,30 42,25 51,25C61,25 68,31 67,44C62,36 52,32 44,36C39,38 35,41 33,46Z" />
+	<path
+		android:fillColor="#FFC93C"
+		android:pathData="M30.8,55a2.2,2.2 0 1,0 4.4,0a2.2,2.2 0 1,0 -4.4,0Z" />
+	<path
+		android:fillColor="#FFC93C"
+		android:pathData="M64.8,55a2.2,2.2 0 1,0 4.4,0a2.2,2.2 0 1,0 -4.4,0Z" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M41.5,47a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z" />
+	<path
+		android:fillColor="#2A2238"
+		android:pathData="M54.5,47a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z" />
+	<path
+		android:strokeColor="#2A2238"
+		android:strokeWidth="1.8"
+		android:strokeLineCap="round"
+		android:pathData="M45,57Q50,61 55,57" />
+	<path
+		android:fillColor="#F08F8F"
+		android:fillAlpha="0.45"
+		android:pathData="M36.4,53a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0Z" />
+	<path
+		android:fillColor="#F08F8F"
+		android:fillAlpha="0.45"
+		android:pathData="M58.4,53a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0Z" />
+	<path
+		android:strokeColor="#5B1F4A"
+		android:strokeWidth="1.6"
+		android:strokeLineCap="round"
+		android:pathData="M38.3,47a5.2,5.2 0 1,0 10.4,0a5.2,5.2 0 1,0 -10.4,0Z" />
+	<path
+		android:strokeColor="#5B1F4A"
+		android:strokeWidth="1.6"
+		android:strokeLineCap="round"
+		android:pathData="M51.3,47a5.2,5.2 0 1,0 10.4,0a5.2,5.2 0 1,0 -10.4,0Z" />
+	<path
+		android:strokeColor="#5B1F4A"
+		android:strokeWidth="1.6"
+		android:strokeLineCap="round"
+		android:pathData="M48.7,47Q50,45.8 51.3,47" />
+</vector>

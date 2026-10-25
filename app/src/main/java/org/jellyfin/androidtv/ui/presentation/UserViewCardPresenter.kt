@@ -23,6 +23,8 @@ class UserViewCardPresenter(
 	inner class ViewHolder(
 		private val cardView: LegacyImageCardView,
 	) : Presenter.ViewHolder(cardView) {
+		private var boundItemId: java.util.UUID? = null
+
 		fun setItem(rowItem: BaseRowItem?) {
 			val baseItem = rowItem?.baseItem
 
@@ -40,6 +42,12 @@ class UserViewCardPresenter(
 			val fillWidth = (cardWidth * cardView.resources.displayMetrics.density).roundToInt()
 			val fillHeight = (cardHeight * cardView.resources.displayMetrics.density).roundToInt()
 
+			// Curator: Kids gets a kid-safe Movies / TV Shows image built from its own library
+			boundItemId = baseItem?.id
+			if (CuratorKidsLibraryImage.appliesTo(baseItem)) {
+				CuratorKidsLibraryImage.load(cardView.mainImageView, baseItem!!, fillWidth, fillHeight) { boundItemId == baseItem.id }
+			} else {
+
 			// Load image
 			val image = baseItem?.itemImages[ImageType.PRIMARY]
 			cardView.mainImageView.load(
@@ -49,6 +57,7 @@ class UserViewCardPresenter(
 				aspectRatio = ImageHelper.ASPECT_RATIO_16_9,
 				blurHashResolution = 32,
 			)
+			}
 
 			// Set title
 			cardView.setTitleText(rowItem?.getName(cardView.context))

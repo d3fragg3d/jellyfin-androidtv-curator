@@ -40,7 +40,7 @@ private val knownProfiles = mapOf(
 	"jthek" to CuratorUserProfile("Mam", R.drawable.avatar_jthek, listOf(Color(0xFFB5179E), Color(0xFFF72585)), 1),
 	"admin" to CuratorUserProfile("Chris", R.drawable.avatar_admin, listOf(Color(0xFFAA5CC3), Color(0xFF00A4DC)), 2),
 	"gemma" to CuratorUserProfile("Gemma", R.drawable.avatar_gemma, listOf(Color(0xFFFF6B6B), Color(0xFFFFA94D)), 3),
-	"steven" to CuratorUserProfile("Steven", R.drawable.avatar_steven, listOf(Color(0xFF0F766E), Color(0xFF65A30D)), 4),
+	"steven" to CuratorUserProfile("Stephen", R.drawable.avatar_steven, listOf(Color(0xFF0F766E), Color(0xFF65A30D)), 4),
 )
 
 private val kidsProfile = CuratorUserProfile("Kids", R.drawable.avatar_kids, listOf(Color(0xFFFFD60A), Color(0xFFFF8C42)), Int.MAX_VALUE)

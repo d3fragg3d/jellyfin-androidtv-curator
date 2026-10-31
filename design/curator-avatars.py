@@ -5,6 +5,7 @@ painted by Compose at runtime (VectorDrawable gradients need API 24, minSdk is 2
 it's only included in the preview SVG.
 """
 import os
+import re
 import sys
 
 # Usage: python3 design/curator-avatars.py <svg preview dir> app/src/main/res/drawable
@@ -71,6 +72,55 @@ def glasses(color=INK, r=5.2):
 	]
 
 
+def girl(cx, cy, s, older):
+	"""A little girl with brown hair. Paths are drawn around the head centre, then placed at (cx, cy) with scale s."""
+	def at(d):
+		return re.sub(r"(-?[\d.]+),(-?[\d.]+)", lambda m: f"{cx + float(m[1]) * s:.2f},{cy + float(m[2]) * s:.2f}", d)
+
+	def dot(x, y, r):
+		return circle(round(cx + x * s, 2), round(cy + y * s, 2), round(r * s, 2))
+
+	hair, hair_light = ("#5A3524", "#6F4530") if older else ("#6B4028", "#82522F")
+	dress, trim = ("#7B2CBF", "#E0AAFF") if older else ("#E5487D", "#FFD6E5")
+	parts = []
+	if older:
+		parts.append(fill(at("M-20,-2C-22,-24 -10,-26 0,-26C10,-26 22,-24 20,-2C22,12 24,28 23,40C14,44 -14,44 -23,40C-24,28 -22,12 -20,-2Z"), hair))
+	else:
+		parts += [
+			fill(at("M-17,-8C-28,-12 -32,2 -27,12C-25,16 -21,14 -20,10C-19,4 -17,0 -15,-2Z"), hair),
+			fill(at("M17,-8C28,-12 32,2 27,12C25,16 21,14 20,10C19,4 17,0 15,-2Z"), hair),
+			fill(dot(-17, -7, 3), trim),
+			fill(dot(17, -7, 3), trim),
+		]
+	parts += [
+		fill(at("M-20,70C-20,30 -12,24 0,24C12,24 20,30 20,70Z"), dress),
+		fill(at("M-6,14L6,14L6,26C4,29 -4,29 -6,26Z"), SKIN_SHADE),
+		fill(at("M-8,25L0,32L8,25C5,27 -5,27 -8,25Z"), trim),
+		fill(dot(-17, 2, 3.4), SKIN),
+		fill(dot(17, 2, 3.4), SKIN),
+		fill(ellipse(cx, round(cy + (0 if older else 1) * s, 2), round(17 * s, 2), round((19 if older else 17) * s, 2)), SKIN),
+	]
+	if older:
+		parts += [
+			fill(at("M-17.5,2C-19,-18 -9,-21 0,-21C9,-21 19,-18 17.5,2C15,-7 8,-11 -3,-11C-9,-10 -15,-6 -17.5,2Z"), hair_light),
+			stroke(at("M-14,-13Q0,-24 14,-13"), trim, 2 * s),
+		]
+	else:
+		parts.append(fill(at("M-17.5,0C-18,-15 -8,-18 0,-18C8,-18 18,-15 17.5,0C14,-4 12,-8 8,-9C5,-6 1,-6 -2,-9C-7,-8 -14,-5 -17.5,0Z"), hair_light))
+	eye_y, eye_x, eye_r = (2, 6.5, 2.2) if older else (3, 6.5, 2.6)
+	smile = "M-4.5,10Q0,14.5 4.5,10" if older else "M-3.5,10.5Q0,14.5 3.5,10.5"
+	parts += [
+		fill(dot(-eye_x, eye_y, eye_r), INK),
+		fill(dot(eye_x, eye_y, eye_r), INK),
+		fill(dot(-eye_x + 0.7, eye_y - 0.8, 0.7), "#FFFFFF"),
+		fill(dot(eye_x + 0.7, eye_y - 0.8, 0.7), "#FFFFFF"),
+		fill(dot(-11, 8, 2.8), BLUSH, 0.5),
+		fill(dot(11, 8, 2.8), BLUSH, 0.5),
+		stroke(at(smile), INK, 1.8 * s),
+	]
+	return parts
+
+
 AVATARS = {
 	# Dad — silver hair and full beard, round glasses
 	"pthek": {
@@ -120,7 +170,7 @@ AVATARS = {
 			stroke("M44,28Q50,25 56,28", "#8A5434", 1.4),
 		] + face(),
 	},
-	# Steven — dark side-parted hair and stubble
+	# Stephen (username steven) — dark side-parted hair and stubble
 	"steven": {
 		"bg": ("#0F766E", "#65A30D"),
 		"shapes": bust("#1E40AF", "#F4C9A6") + head() + [
@@ -129,28 +179,10 @@ AVATARS = {
 			fill("M46,33C52,27 62,27 66,36C60,31 53,31 46,33Z", "#2F2018"),
 		] + face(blush=False),
 	},
-	# Kids — a friendly dinosaur
+	# Kids — Neve and Livvy: the 9-year-old behind with long hair, the 4-year-old in front with bunches
 	"kids": {
 		"bg": ("#FFD60A", "#FF8C42"),
-		"shapes": [
-			fill("M20,100C20,78 32,68 50,68C68,68 80,78 80,100Z", "#4CAF50"),
-			fill("M36,100C36,86 42,80 50,80C58,80 64,86 64,100Z", "#C5E99B"),
-			fill("M35,24L40,14L45,23Z M46,20L51,9L56,20Z M57,23L62,14L66,25Z", "#2E8B3E"),
-			fill("M24,50C24,30 36,20 50,20C66,20 78,30 78,48C78,64 68,74 50,74C34,74 24,66 24,50Z", "#5CC85F"),
-			fill("M30,58C34,68 66,68 72,56C70,70 60,74 50,74C40,74 32,68 30,58Z", "#4CAF50"),
-			fill(circle(40, 44, 7.5), "#FFFFFF"),
-			fill(circle(62, 44, 7.5), "#FFFFFF"),
-			fill(circle(41.5, 45, 4), INK),
-			fill(circle(63.5, 45, 4), INK),
-			fill(circle(43, 43.5, 1.4), "#FFFFFF"),
-			fill(circle(65, 43.5, 1.4), "#FFFFFF"),
-			fill(circle(46, 56, 1.3), "#2E8B3E"),
-			fill(circle(56, 56, 1.3), "#2E8B3E"),
-			stroke("M38,61Q51,70 64,61", INK, 2),
-			fill("M47,64.2L50,68L53,64.6Z", "#FFFFFF"),
-			fill(circle(32, 55, 3.2), BLUSH, 0.5),
-			fill(circle(70, 55, 3.2), BLUSH, 0.5),
-		],
+		"shapes": girl(36, 40, 0.86, older=True) + girl(66, 60, 0.72, older=False),
 	},
 }
 
